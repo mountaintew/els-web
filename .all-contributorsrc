@@ -42,6 +42,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "mikagee",
+      "name": "Mikage",
+      "avatar_url": "https://avatars.githubusercontent.com/u/84429887?v=4",
+      "profile": "https://github.com/mikagee",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

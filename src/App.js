@@ -4,6 +4,8 @@ import { createMuiTheme, ThemeProvider, Typography }  from '@material-ui/core'
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import { amber } from '@material-ui/core/colors';
 import Login from './components/Login'
+import DashBoard from './components/DashBoard'
+
 
 const theme = createMuiTheme({
   palette: {
@@ -24,6 +26,9 @@ function App() {
       <Router>
           <Switch>
             <Route path="/login" component={Login}/>
+          </Switch>
+          <Switch>
+            <Route path="/DashBoard" component={DashBoard}/> 
           </Switch>
       </Router>
     </ThemeProvider>

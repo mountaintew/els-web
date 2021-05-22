@@ -1,9 +1,9 @@
 import React from 'react';
 import './App.css';
-import { createMuiTheme, ThemeProvider, Typography }  from '@material-ui/core'  
+import { createMuiTheme, ThemeProvider }  from '@material-ui/core'  
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import { amber } from '@material-ui/core/colors';
-import Login from './components/Login'
+import Create from './components/CreateAccount'
 
 const theme = createMuiTheme({
   palette: {
@@ -23,7 +23,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <Router>
           <Switch>
-            <Route path="/login" component={Login}/>
+            <Route path="/new" component={Create}/>
           </Switch>
       </Router>
     </ThemeProvider>

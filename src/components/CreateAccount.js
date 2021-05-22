@@ -1,0 +1,437 @@
+import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, TextField, Typography } from '@material-ui/core'
+import React, { useState } from 'react'
+import locations from '../locations.json'
+import { makeStyles } from '@material-ui/core/styles';
+import LocationOnIcon from '@material-ui/icons/LocationOn';
+import { amber } from '@material-ui/core/colors';
+import MuiAlert from '@material-ui/lab/Alert';
+import { useForm } from 'react-hook-form'
+
+function Alert(props) {
+    return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+  
+
+const useStyles = makeStyles((theme) => ({
+    body: {
+        backgroundColor: amber
+    },
+    paper: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+    },
+    avatar: {
+        margin: theme.spacing(1),
+        backgroundColor: '#fcbc20',
+    },
+    form: {
+        width: '100%', // Fix IE 11 issue.
+        marginTop: theme.spacing(3),
+    },
+    submit: {
+        margin: theme.spacing(3, 0, 2),
+    },
+    wrapper: {
+        position: 'relative',
+    },
+    buttonProgress: {
+        color: amber,
+        position: 'relative',
+        top: '50%',
+        left: '45%',
+        right: '50%'
+    },
+    cardbg: {
+        marginTop: theme.spacing(12)
+    }
+}));
+
+function CreateAccount() {
+    const classes = useStyles();
+    const { watch, handleSubmit, register, unregister, formState:{ errors, isValid }, } = useForm({mode: "all"});
+    const [severity,setSeverity] = useState('')
+    const [snackMessage,setSnackMessage] = useState('')
+    const [snack,setSnack] = useState(false)
+
+    const [submitBtn,setSubmitBtn] = useState(false)
+    const [formStep,setFormStep] = useState(0)
+
+
+    const renderButton = () => {
+        if (formStep > 2){
+            return undefined
+        } else if (formStep !== 2){
+            return (  
+                <div className={classes.wrapper}>
+                <Button
+                    disabled={!isValid}
+                    type="button"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    className={classes.submit}
+                    onClick={completeFormStep}
+                >
+                Next
+                </Button>
+                </div>
+            )
+        } else {
+            return (  
+                <div className={classes.wrapper}>
+                <Button
+                    disabled={!isValid}
+                    type="button"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    className={classes.submit}
+                    onClick={completeFormStep}
+                >
+                Create Account
+                </Button>
+                </div>
+            )
+        } 
+    }
+
+
+    const completeFormStep = () => {
+        setFormStep(cur => cur + 1)
+    }
+
+    // Select Location ################################################
+    const [region,setRegion] = useState('')
+    const [province,setProvince] = useState('')
+    const [muni, setMuni] = useState('')
+    const [barangay, setBarangay] = useState('')
+
+    const regionOnChange = (e) =>{
+        setRegion(e.target.value)
+        unregister('province')
+        unregister("municipality")
+        unregister("barangay")
+
+        setProvince('')
+        setMuni('')
+        setBarangay('')
+    }
+    const provinceOnChange = (e) =>{
+        setProvince(e.target.value)
+        setMuni('')
+        setBarangay('')
+    }
+    const muniOnChange = (e) =>{
+        setMuni(e.target.value)
+        setBarangay('')
+    }
+    const barangayOnChange = (e) =>{
+        setBarangay(e.target.value)
+    }
+
+    const regionOptions = Object.values(Object.keys(locations)).map((reg) =>
+        <MenuItem value={reg}>{reg}</MenuItem>
+    );
+
+    const provinceOptions = region !== '' ? 
+    Object.keys(locations[region].province_list).map((reg) =>
+        <MenuItem value={reg}>{reg}</MenuItem>
+    ) : null
+    const muniOptions = province !== '' && region !== '' ? 
+    Object.keys(locations[region].province_list[province].municipality_list).map((reg) =>
+        <MenuItem value={reg}>{reg}</MenuItem>
+    ) : null
+
+    const barangayOptions = province !== '' && region !== '' && muni !== '' ? 
+    Object.values(locations[region].province_list[province].municipality_list[muni].barangay_list).map((reg) =>
+        <MenuItem value={reg}>{reg}</MenuItem>
+    ) : null
+    // Select Location ################################################
+
+   
+    const handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+          return;
+        }
+        setSnack(false);
+    };
+
+    return (
+        <Container component="main" maxWidth="xs" >
+            <CssBaseline />
+            <Card className={classes.cardbg} variant="outlined">
+                <CardContent>
+                    <div className={classes.paper}>
+                        <Avatar className={classes.avatar}>
+                            <LocationOnIcon/>
+                        </Avatar>   
+                        <Typography component="h1" variant="h5">
+                            Create Account
+                        </Typography>
+                        <form className={classes.form} noValidate autoComplete="off" >
+                            {/* ########### Section 0 ########### */}
+                            {formStep === 0 && (
+                                <section>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="h6">
+                                                Login Credentials
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12}> 
+                                            
+                                            <TextField
+                                                id="email"
+                                                required
+                                                variant="outlined"
+                                                label="Email"
+                                                fullWidth
+                                                error={errors.email}   
+                                                name="email"
+                                                {...register('email', 
+                                                    { required: true,  pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
+                                                )} 
+                                                helperText={errors.email && 'Please enter a valid email.'}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                name="password"
+                                                id="password"
+                                                required
+                                                variant="outlined"
+                                                label="Password"
+                                                fullWidth
+                                                type="password"
+                                                error={errors.password}
+                                                {...register('password', { required: true })} 
+                                                helperText={errors.password && 'Password is required.'}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </section>
+                            )}
+                            {/* ########### Section 0 ########### */}
+                            
+                            {/* ########### Section 1 ########### */}
+                            {formStep === 1 && (
+                                <section>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="h6">
+                                                Admin Information
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                name="mobile"
+                                                id="mobile"
+                                                required
+                                                variant="outlined"
+                                                label="Mobile Number"
+                                                fullWidth
+                                                {...register('mobileNumber', { 
+                                                    required: true, 
+                                                    maxLength: 10, 
+                                                    minLength: 10,
+                                                    pattern: /\d+/ }
+                                                )} 
+                                                error={errors.mobileNumber}
+                                                InputProps={{
+                                                    startAdornment: <InputAdornment position="start">+63</InputAdornment>,
+                                                  }}
+                                                helperText={errors.mobileNumber && 'Please enter a valid mobile number.'}
+                                            />
+                                            
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                name="firstname"
+                                                id="firstname"
+                                                required
+                                                variant="outlined"
+                                                fullWidth
+                                                label="First Name"
+                                                {...register('firstname', { required: true})} 
+                                                error={errors.firstname}
+                                                helperText={errors.firstname && 'First Name is required.'}
+                                                InputProps={{style: {textTransform: 'capitalize'}}}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                name="lastname"
+                                                id="lastname"
+                                                required
+                                                variant="outlined"
+                                                fullWidth
+                                                label="Last Name"
+                                                {...register('lastname', { required: true })} 
+                                                error={errors.lastname}
+                                                helperText={errors.lastname && 'Last Name is required.'}
+                                                
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                name="eid"
+                                                id="eid"
+                                                required
+                                                variant="outlined"
+                                                fullWidth
+                                                label="Employee ID"
+                                                {...register('eid', { required: true })} 
+                                                error={errors.eid}
+                                                helperText={errors.eid && 'Employee ID is required.'}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </section>
+                            )}
+                            {/* ########### Section 1 ########### */}
+                            
+                            {/* ########### Section 2 ########### */}
+                            {formStep === 2 && (
+                                <section>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="h6" >
+                                                Admin Location Scope
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <FormControl variant="outlined"
+                                                fullWidth
+                                                error={errors.region}>  
+                                                <InputLabel id="select-region-label">Select Region</InputLabel>
+                                                <Select
+                                                    {...register('region', { required: true })} 
+                                                    labelId="select-region"
+                                                    id="select-region"
+                                                    value={region}
+                                                    onChange={regionOnChange}
+                                                    label="Select Region"
+                                                >
+                                                    <MenuItem value="">
+                                                        <em>Select Region</em>
+                                                    </MenuItem>
+                                                    {regionOptions}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2} >
+                                        <Grid item xs={12}>
+                                            <Box display={region === '' ? 'none' : 'block'}>
+                                            <FormControl variant="outlined"
+                                                fullWidth
+                                                error={errors.province}
+                                                >
+                                                <InputLabel id="select-province-label">Select {region === "NCR" ? 'District' : 'Province'}</InputLabel>
+                                                <Select
+                                                    {...register('province', { required: true })} 
+                                                    labelId="select-province"
+                                                    id="select-province"
+                                                    value={province}
+                                                    onChange={provinceOnChange}
+                                                    label="Select Province"
+                                                >
+                                                    <MenuItem value="">
+                                                    <em>Select {region === "NCR" ? 'District' : 'Province'}</em>
+                                                    </MenuItem>
+                                                    {provinceOptions}
+                                                </Select>
+                                            </FormControl>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Box display={province === '' ? 'none' : 'block'}>
+                                            <FormControl variant="outlined"
+                                                fullWidth
+                                                error={errors.municipality}>
+                                                <InputLabel id="select-muni-label">Select Municipality</InputLabel>
+                                                <Select
+                                                    labelId="select-muni"
+                                                    id="select-muni"
+                                                    {...register('municipality', { required: true })} 
+                                                    value={muni}
+                                                    onChange={muniOnChange}
+                                                    label="Select Municipality"
+                                                >
+                                                    <MenuItem value="">
+                                                    <em>Select Municipality</em>
+                                                    </MenuItem>
+                                                    {muniOptions}
+                                                </Select>
+                                            </FormControl>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Box display={muni === '' ? 'none' : 'block'}>
+                                            <FormControl variant="outlined"
+                                                fullWidth
+                                                error={errors.barangay}>
+                                                <InputLabel id="select-barangay-label">Select Barangay</InputLabel>
+                                                <Select
+                                                    labelId="select-barangay"
+                                                    id="select-barangay"
+                                                    {...register('barangay', { required: true })}
+                                                    value={barangay}
+                                                    onChange={barangayOnChange}
+                                                    label="Select Barangay"
+                                                    
+                                                >
+                                                    <MenuItem value="">
+                                                    <em>Select Barangay</em>
+                                                    </MenuItem>
+                                                    {barangayOptions}
+                                                </Select>
+                                            </FormControl>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                </section>
+                            )}
+                            {/* ########### Section 2 ########### */}
+                        
+                            {formStep === 3 && (
+                                <Grid
+                                    container
+                                    spacing={0}
+                                    direction="column"
+                                    alignItems="center"
+                                    justify="center"
+                                >
+                                    <Grid item xs={3}>
+                                        <CircularProgress color="primary" />
+                                    </Grid>   
+                                </Grid> 
+                            )}
+                            <Snackbar open={snack} autoHideDuration={6000} onClose={handleClose}>
+                                <Alert onClose={handleClose} severity={severity}>
+                                    {snackMessage}
+                                </Alert>
+                            </Snackbar>
+                            {renderButton()} 
+                        </form>
+                    </div>
+                </CardContent>
+            </Card>
+        </Container>
+    )
+}
+
+export default CreateAccount

@@ -7,10 +7,17 @@ import { amber } from '@material-ui/core/colors';
 import MuiAlert from '@material-ui/lab/Alert';
 import { useForm } from 'react-hook-form'
 
+import { useAuth } from '../contexts/AuthContext'
+import { useHistory, Link } from 'react-router-dom'
+
+import firebase from '../util/firebase';
+import { AddAlertTwoTone } from '@material-ui/icons';
+
+
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
-  
+
 
 const useStyles = makeStyles((theme) => ({
     body: {
@@ -49,65 +56,102 @@ const useStyles = makeStyles((theme) => ({
 
 function CreateAccount() {
     const classes = useStyles();
-    const { watch, handleSubmit, register, unregister, formState:{ errors, isValid }, } = useForm({mode: "all"});
-    const [severity,setSeverity] = useState('')
-    const [snackMessage,setSnackMessage] = useState('')
-    const [snack,setSnack] = useState(false)
+    const { clearErrors, setError, watch, handleSubmit, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
+    const [severity, setSeverity] = useState('')
+    const [snackMessage, setSnackMessage] = useState('')
+    const [snack, setSnack] = useState(false)
 
-    const [submitBtn,setSubmitBtn] = useState(false)
-    const [formStep,setFormStep] = useState(0)
+    const [submitBtn, setSubmitBtn] = useState(false)
+    const [formStep, setFormStep] = useState(0)
 
+    const { signup } = useAuth()
+    const history = useHistory()
+    const dbRef = firebase.database();
 
     const renderButton = () => {
-        if (formStep > 2){
+        if (formStep > 2) {
             return undefined
-        } else if (formStep !== 2){
-            return (  
+        } else if (formStep === 0 || formStep === 1) {
+            return (
                 <div className={classes.wrapper}>
-                <Button
-                    disabled={!isValid}
-                    type="button"
-                    fullWidth
-                    variant="contained"
-                    color="primary"
-                    className={classes.submit}
-                    onClick={completeFormStep}
-                >
-                Next
-                </Button>
+                    <Button
+                        disabled={!isValid}
+                        type="button"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        className={classes.submit}
+                        onClick={completeFormStep}
+                    >
+                        Next
+                    </Button>
                 </div>
             )
-        } else {
-            return (  
+        } else if (formStep === 2) {
+            return (
                 <div className={classes.wrapper}>
-                <Button
-                    disabled={!isValid}
-                    type="button"
-                    fullWidth
-                    variant="contained"
-                    color="primary"
-                    className={classes.submit}
-                    onClick={completeFormStep}
-                >
-                Create Account
-                </Button>
+                    <Button
+                        disabled={!isValid}
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        className={classes.submit}
+                        onClick={completeFormStep}
+                    >
+                        Create Account
+                    </Button>
                 </div>
             )
-        } 
+        }
     }
 
 
     const completeFormStep = () => {
-        setFormStep(cur => cur + 1)
+        if (formStep === 0) {
+            dbRef.ref('/administrators').orderByChild("email").equalTo(watch('email')).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    clearErrors("email")
+                    setError("email", {
+                        type: "manual",
+                        message: "Email already exists."
+                    });
+                } else {
+                    setFormStep(cur => cur + 1)
+                }
+            }).catch((error) => {
+                setSnack(true)
+                setSeverity('error')
+                setSnackMessage('Connection Lost')
+            });
+        }
+
+        if (formStep === 1) {
+            dbRef.ref('/administrators').orderByChild("mobileNumber").equalTo(watch('mobileNumber')).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    clearErrors("mobileNumber")
+                    setError("mobileNumber", {
+                        type: "manual",
+                        message: "Mobile number is already in use by another account."
+                    });
+                } else {
+                    setFormStep(cur => cur + 1)
+                }
+            }).catch((error) => {
+                setSnack(true)
+                setSeverity('error')
+                setSnackMessage('Connection Lost')
+            });
+        }
     }
 
     // Select Location ################################################
-    const [region,setRegion] = useState('')
-    const [province,setProvince] = useState('')
+    const [region, setRegion] = useState('')
+    const [province, setProvince] = useState('')
     const [muni, setMuni] = useState('')
     const [barangay, setBarangay] = useState('')
 
-    const regionOnChange = (e) =>{
+    const regionOnChange = (e) => {
         setRegion(e.target.value)
         unregister('province')
         unregister("municipality")
@@ -117,16 +161,16 @@ function CreateAccount() {
         setMuni('')
         setBarangay('')
     }
-    const provinceOnChange = (e) =>{
+    const provinceOnChange = (e) => {
         setProvince(e.target.value)
         setMuni('')
         setBarangay('')
     }
-    const muniOnChange = (e) =>{
+    const muniOnChange = (e) => {
         setMuni(e.target.value)
         setBarangay('')
     }
-    const barangayOnChange = (e) =>{
+    const barangayOnChange = (e) => {
         setBarangay(e.target.value)
     }
 
@@ -134,29 +178,78 @@ function CreateAccount() {
         <MenuItem value={reg}>{reg}</MenuItem>
     );
 
-    const provinceOptions = region !== '' ? 
-    Object.keys(locations[region].province_list).map((reg) =>
-        <MenuItem value={reg}>{reg}</MenuItem>
-    ) : null
-    const muniOptions = province !== '' && region !== '' ? 
-    Object.keys(locations[region].province_list[province].municipality_list).map((reg) =>
-        <MenuItem value={reg}>{reg}</MenuItem>
-    ) : null
+    const provinceOptions = region !== '' ?
+        Object.keys(locations[region].province_list).map((reg) =>
+            <MenuItem value={reg}>{reg}</MenuItem>
+        ) : null
+    const muniOptions = province !== '' && region !== '' ?
+        Object.keys(locations[region].province_list[province].municipality_list).map((reg) =>
+            <MenuItem value={reg}>{reg}</MenuItem>
+        ) : null
 
-    const barangayOptions = province !== '' && region !== '' && muni !== '' ? 
-    Object.values(locations[region].province_list[province].municipality_list[muni].barangay_list).map((reg) =>
-        <MenuItem value={reg}>{reg}</MenuItem>
-    ) : null
+    const barangayOptions = province !== '' && region !== '' && muni !== '' ?
+        Object.values(locations[region].province_list[province].municipality_list[muni].barangay_list).map((reg) =>
+            <MenuItem value={reg}>{reg}</MenuItem>
+        ) : null
     // Select Location ################################################
 
-   
+
     const handleClose = (event, reason) => {
         if (reason === 'clickaway') {
-          return;
+            return;
         }
         setSnack(false);
     };
 
+    const emailErr = () => {
+        if (errors.email && errors.email.message === '') {
+            return 'Please enter a valid email address.'
+        }
+        if (errors.email && errors.email.message !== '') {
+            return errors.email.message
+        }
+    }
+
+    const numErr = () => {
+        if (errors.mobileNumber && errors.mobileNumber.message === '') {
+            return 'Please enter a valid mobile number.'
+        }
+        if (errors.mobileNumber && errors.mobileNumber.message !== '') {
+            return errors.mobileNumber.message
+        }
+    }
+
+
+    async function handleFormSubmit(e) {
+        e.preventDefault()
+        if (formStep === 2) {
+            try {
+                await dbRef.ref('administrators/' + "+63" + watch('mobileNumber')).set({
+                    "email": watch('email'),
+                    "password": watch('password'),
+                    "mobileNumber": watch('mobileNumber'),
+                    "firstname": watch('firstname'),
+                    "lastname": watch('lastname'),
+                    "eid": watch('eid'),
+                    "region": watch('region'),
+                    "province": watch('province'),
+                    "municipality": watch('municipality'),
+                    "barangay": watch('barangay')
+                }, (error) => {
+                    if (error) {
+                        alert('error saving')
+                    } else {
+                        signup(watch('email'), watch('password'))
+                        history.push("/login")
+                    }
+                });
+            } catch (error) {
+                setSnack(true)
+                setSeverity('error')
+                setSnackMessage('Connection Lost')
+            }
+        }
+    }
     return (
         <Container component="main" maxWidth="xs" >
             <CssBaseline />
@@ -164,12 +257,12 @@ function CreateAccount() {
                 <CardContent>
                     <div className={classes.paper}>
                         <Avatar className={classes.avatar}>
-                            <LocationOnIcon/>
-                        </Avatar>   
+                            <LocationOnIcon />
+                        </Avatar>
                         <Typography component="h1" variant="h5">
                             Create Account
                         </Typography>
-                        <form className={classes.form} noValidate autoComplete="off" >
+                        <form className={classes.form} noValidate autoComplete="off" onSubmit={handleFormSubmit}>
                             {/* ########### Section 0 ########### */}
                             {formStep === 0 && (
                                 <section>
@@ -179,20 +272,21 @@ function CreateAccount() {
                                                 Login Credentials
                                             </Typography>
                                         </Grid>
-                                        <Grid item xs={12}> 
-                                            
+                                        <Grid item xs={12}>
+
                                             <TextField
                                                 id="email"
                                                 required
                                                 variant="outlined"
                                                 label="Email"
                                                 fullWidth
-                                                error={errors.email}   
+                                                error={errors.email}
                                                 name="email"
-                                                {...register('email', 
-                                                    { required: true,  pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
-                                                )} 
-                                                helperText={errors.email && 'Please enter a valid email.'}
+                                                defaultValue={watch('email') ? watch('email') : ''}
+                                                {...register('email',
+                                                    { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
+                                                )}
+                                                helperText={emailErr()}
                                             />
                                         </Grid>
                                     </Grid>
@@ -206,16 +300,17 @@ function CreateAccount() {
                                                 label="Password"
                                                 fullWidth
                                                 type="password"
+                                                defaultValue={watch('password') ? watch('password') : ''}
                                                 error={errors.password}
-                                                {...register('password', { required: true })} 
-                                                helperText={errors.password && 'Password is required.'}
+                                                {...register('password', { required: true, minLength: 6 })}
+                                                helperText={errors.password && 'Password must be at least 6 characters long'}
                                             />
                                         </Grid>
                                     </Grid>
                                 </section>
                             )}
                             {/* ########### Section 0 ########### */}
-                            
+
                             {/* ########### Section 1 ########### */}
                             {formStep === 1 && (
                                 <section>
@@ -233,19 +328,21 @@ function CreateAccount() {
                                                 variant="outlined"
                                                 label="Mobile Number"
                                                 fullWidth
-                                                {...register('mobileNumber', { 
-                                                    required: true, 
-                                                    maxLength: 10, 
+                                                defaultValue={watch('mobileNumber') ? watch('mobileNumber') : ''}
+                                                {...register('mobileNumber', {
+                                                    required: true,
+                                                    maxLength: 10,
                                                     minLength: 10,
-                                                    pattern: /\d+/ }
-                                                )} 
+                                                    pattern: /\d+/
+                                                }
+                                                )}
                                                 error={errors.mobileNumber}
                                                 InputProps={{
                                                     startAdornment: <InputAdornment position="start">+63</InputAdornment>,
-                                                  }}
-                                                helperText={errors.mobileNumber && 'Please enter a valid mobile number.'}
+                                                }}
+                                                helperText={numErr()}
                                             />
-                                            
+
                                         </Grid>
                                     </Grid>
                                     <Grid container spacing={2}>
@@ -257,10 +354,11 @@ function CreateAccount() {
                                                 variant="outlined"
                                                 fullWidth
                                                 label="First Name"
-                                                {...register('firstname', { required: true})} 
+                                                defaultValue={watch('firstname') ? watch('firstname') : ''}
+                                                {...register('firstname', { required: true })}
                                                 error={errors.firstname}
                                                 helperText={errors.firstname && 'First Name is required.'}
-                                                InputProps={{style: {textTransform: 'capitalize'}}}
+                                                InputProps={{ style: { textTransform: 'capitalize' } }}
                                             />
                                         </Grid>
                                     </Grid>
@@ -273,10 +371,11 @@ function CreateAccount() {
                                                 variant="outlined"
                                                 fullWidth
                                                 label="Last Name"
-                                                {...register('lastname', { required: true })} 
+                                                defaultValue={watch('lastname') ? watch('lastname') : ''}
+                                                {...register('lastname', { required: true })}
                                                 error={errors.lastname}
                                                 helperText={errors.lastname && 'Last Name is required.'}
-                                                
+
                                             />
                                         </Grid>
                                     </Grid>
@@ -288,8 +387,9 @@ function CreateAccount() {
                                                 required
                                                 variant="outlined"
                                                 fullWidth
+                                                defaultValue={watch('eid') ? watch('eid') : ''}
                                                 label="Employee ID"
-                                                {...register('eid', { required: true })} 
+                                                {...register('eid', { required: true })}
                                                 error={errors.eid}
                                                 helperText={errors.eid && 'Employee ID is required.'}
                                             />
@@ -298,7 +398,7 @@ function CreateAccount() {
                                 </section>
                             )}
                             {/* ########### Section 1 ########### */}
-                            
+
                             {/* ########### Section 2 ########### */}
                             {formStep === 2 && (
                                 <section>
@@ -311,10 +411,10 @@ function CreateAccount() {
                                         <Grid item xs={12}>
                                             <FormControl variant="outlined"
                                                 fullWidth
-                                                error={errors.region}>  
+                                                error={errors.region}>
                                                 <InputLabel id="select-region-label">Select Region</InputLabel>
                                                 <Select
-                                                    {...register('region', { required: true })} 
+                                                    {...register('region', { required: true })}
                                                     labelId="select-region"
                                                     id="select-region"
                                                     value={region}
@@ -332,100 +432,88 @@ function CreateAccount() {
                                     <Grid container spacing={2} >
                                         <Grid item xs={12}>
                                             <Box display={region === '' ? 'none' : 'block'}>
-                                            <FormControl variant="outlined"
-                                                fullWidth
-                                                error={errors.province}
+                                                <FormControl variant="outlined"
+                                                    fullWidth
+                                                    error={errors.province}
                                                 >
-                                                <InputLabel id="select-province-label">Select {region === "NCR" ? 'District' : 'Province'}</InputLabel>
-                                                <Select
-                                                    {...register('province', { required: true })} 
-                                                    labelId="select-province"
-                                                    id="select-province"
-                                                    value={province}
-                                                    onChange={provinceOnChange}
-                                                    label="Select Province"
-                                                >
-                                                    <MenuItem value="">
-                                                    <em>Select {region === "NCR" ? 'District' : 'Province'}</em>
-                                                    </MenuItem>
-                                                    {provinceOptions}
-                                                </Select>
-                                            </FormControl>
+                                                    <InputLabel id="select-province-label">Select {region === "NCR" ? 'District' : 'Province'}</InputLabel>
+                                                    <Select
+                                                        {...register('province', { required: true })}
+                                                        labelId="select-province"
+                                                        id="select-province"
+                                                        value={province}
+                                                        onChange={provinceOnChange}
+                                                        label="Select Province"
+                                                    >
+                                                        <MenuItem value="">
+                                                            <em>Select {region === "NCR" ? 'District' : 'Province'}</em>
+                                                        </MenuItem>
+                                                        {provinceOptions}
+                                                    </Select>
+                                                </FormControl>
                                             </Box>
                                         </Grid>
                                     </Grid>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12}>
                                             <Box display={province === '' ? 'none' : 'block'}>
-                                            <FormControl variant="outlined"
-                                                fullWidth
-                                                error={errors.municipality}>
-                                                <InputLabel id="select-muni-label">Select Municipality</InputLabel>
-                                                <Select
-                                                    labelId="select-muni"
-                                                    id="select-muni"
-                                                    {...register('municipality', { required: true })} 
-                                                    value={muni}
-                                                    onChange={muniOnChange}
-                                                    label="Select Municipality"
-                                                >
-                                                    <MenuItem value="">
-                                                    <em>Select Municipality</em>
-                                                    </MenuItem>
-                                                    {muniOptions}
-                                                </Select>
-                                            </FormControl>
+                                                <FormControl variant="outlined"
+                                                    fullWidth
+                                                    error={errors.municipality}>
+                                                    <InputLabel id="select-muni-label">Select Municipality</InputLabel>
+                                                    <Select
+                                                        labelId="select-muni"
+                                                        id="select-muni"
+                                                        {...register('municipality', { required: true })}
+                                                        value={muni}
+                                                        onChange={muniOnChange}
+                                                        label="Select Municipality"
+                                                    >
+                                                        <MenuItem value="">
+                                                            <em>Select Municipality</em>
+                                                        </MenuItem>
+                                                        {muniOptions}
+                                                    </Select>
+                                                </FormControl>
                                             </Box>
                                         </Grid>
                                     </Grid>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12}>
                                             <Box display={muni === '' ? 'none' : 'block'}>
-                                            <FormControl variant="outlined"
-                                                fullWidth
-                                                error={errors.barangay}>
-                                                <InputLabel id="select-barangay-label">Select Barangay</InputLabel>
-                                                <Select
-                                                    labelId="select-barangay"
-                                                    id="select-barangay"
-                                                    {...register('barangay', { required: true })}
-                                                    value={barangay}
-                                                    onChange={barangayOnChange}
-                                                    label="Select Barangay"
-                                                    
-                                                >
-                                                    <MenuItem value="">
-                                                    <em>Select Barangay</em>
-                                                    </MenuItem>
-                                                    {barangayOptions}
-                                                </Select>
-                                            </FormControl>
+                                                <FormControl variant="outlined"
+                                                    fullWidth
+                                                    error={errors.barangay}>
+                                                    <InputLabel id="select-barangay-label">Select Barangay</InputLabel>
+                                                    <Select
+                                                        labelId="select-barangay"
+                                                        id="select-barangay"
+                                                        {...register('barangay', { required: true })}
+                                                        value={barangay}
+                                                        onChange={barangayOnChange}
+                                                        label="Select Barangay"
+
+                                                    >
+                                                        <MenuItem value="">
+                                                            <em>Select Barangay</em>
+                                                        </MenuItem>
+                                                        {barangayOptions}
+                                                    </Select>
+                                                </FormControl>
                                             </Box>
                                         </Grid>
                                     </Grid>
                                 </section>
                             )}
                             {/* ########### Section 2 ########### */}
-                        
-                            {formStep === 3 && (
-                                <Grid
-                                    container
-                                    spacing={0}
-                                    direction="column"
-                                    alignItems="center"
-                                    justify="center"
-                                >
-                                    <Grid item xs={3}>
-                                        <CircularProgress color="primary" />
-                                    </Grid>   
-                                </Grid> 
-                            )}
+
+
                             <Snackbar open={snack} autoHideDuration={6000} onClose={handleClose}>
                                 <Alert onClose={handleClose} severity={severity}>
                                     {snackMessage}
                                 </Alert>
                             </Snackbar>
-                            {renderButton()} 
+                            {renderButton()}
                         </form>
                     </div>
                 </CardContent>

@@ -1,9 +1,14 @@
 import React from 'react';
 import './App.css';
-import { createMuiTheme, ThemeProvider }  from '@material-ui/core'  
+import { createMuiTheme, ThemeProvider } from '@material-ui/core'
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import { amber } from '@material-ui/core/colors';
+import Login from './components/Login'
 import Create from './components/CreateAccount'
+import PrivateRoute from './components/PrivateRoute'
+import { AuthProvider } from './contexts/AuthContext'
+//import Dashboard from './components/Dashboard'
+
 
 const theme = createMuiTheme({
   palette: {
@@ -15,16 +20,20 @@ const theme = createMuiTheme({
     fontWeightRegular: 500,
     fontWeightMedium: 600,
     fontWeightBold: 700
-  }  
+  }
 })
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <Router>
+        <AuthProvider>
           <Switch>
-            <Route path="/new" component={Create}/>
+            {/* <PrivateRoute exact path="/" component={Dashboard} /> */}
+            <Route path="/new" component={Create} />
+            <Route path="/login" component={Login} />
           </Switch>
+        </AuthProvider>
       </Router>
     </ThemeProvider>
   );

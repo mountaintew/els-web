@@ -7,12 +7,16 @@ import Login from './components/Login'
 import Create from './components/CreateAccount'
 import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './contexts/AuthContext'
-//import Dashboard from './components/Dashboard'
-
+import Dashboard from './components/Dashboard'
+import ForgotPassword from './components/ForgotPassword'
 
 const theme = createMuiTheme({
   palette: {
     primary: amber,
+    background: {
+      default: "#f1f5f0"
+    }
+
   },
   typography: {
     fontFamily: 'Montserrat',
@@ -29,9 +33,10 @@ function App() {
       <Router>
         <AuthProvider>
           <Switch>
-            {/* <PrivateRoute exact path="/" component={Dashboard} /> */}
+            <PrivateRoute exact path="/" component={Dashboard} />
             <Route path="/new" component={Create} />
             <Route path="/login" component={Login} />
+            <Route path="/forgot" component={ForgotPassword}/>
           </Switch>
         </AuthProvider>
       </Router>

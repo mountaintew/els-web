@@ -24,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: '#fcbc20',
     },
     form: {
-        width: '100%', // Fix IE 11 issue.
+        width: '100%',
         marginTop: theme.spacing(3),
     },
     submit: {
@@ -55,7 +55,7 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-export default function Login() {
+export default function ForgotPassword() {
     const classes = useStyles();
     const { watch, register, formState: { errors, isValid }, } = useForm({ mode: "all" });
 
@@ -63,29 +63,22 @@ export default function Login() {
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
 
-    
-    const { login } = useAuth()
+    const { resetpassword } = useAuth()
     const history = useHistory()
 
     async function handleSubmit(e) {
         e.preventDefault()
         try {
-            await login(watch('email'), watch('password'))
+            await resetpassword(watch('email'))
+            setSnack(false)
             setSnack(true)
-            setSnackMessage("Login Successful")
+            setSnackMessage("Check your email for further instructions")
             setSeverity("success")
-            history.push("/")
-        } catch(error) {
+        } catch (error) {
             setSnack(true)
             setSnackMessage(error.code)
             setSeverity("error")
-            switch(error.code){
-                case "auth/wrong-password":
-                    setSnack(false)
-                    setSnack(true)
-                    setSnackMessage("Invalid Username or Password")
-                    setSeverity("error")
-                    break;
+            switch (error.code) {
                 case "auth/too-many-requests":
                     setSnack(false)
                     setSnack(true)
@@ -98,7 +91,6 @@ export default function Login() {
                     setSnackMessage("Account doesn't exist.")
                     setSeverity("error")
                     break;
-
             }
 
         }
@@ -123,18 +115,23 @@ export default function Login() {
             >
                 <Container component="main" maxWidth="xs">
                     <CssBaseline />
-                    <Card className={classes.cardbg}  elevation={3}>
+                    <Card className={classes.cardbg} elevation={3}>
                         <CardContent>
                             <div className={classes.paper}>
                                 <Avatar className={classes.avatar}>
                                     <LocationOnIcon />
                                 </Avatar>
                                 <Typography component="h1" variant="h5">
-                                    Login
+                                    Forgot Password
                                 </Typography>
                                 <form className={classes.form} noValidate autoComplete="off" onSubmit={handleSubmit}>
                                     {/* onSubmit={handleFormSubmit} */}
                                     <Grid container spacing={2}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="caption" display="block" align="center" gutterBottom>
+                                                Enter your email address and we'll send you a link to reset your password.
+                                            </Typography>
+                                        </Grid>
                                         <Grid item xs={12}>
                                             <TextField
                                                 id="email"
@@ -152,23 +149,7 @@ export default function Login() {
                                             />
                                         </Grid>
                                     </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="password"
-                                                id="password"
-                                                required
-                                                variant="outlined"
-                                                label="Password"
-                                                fullWidth
-                                                type="password"
-                                                defaultValue={watch('password') ? watch('password') : ''}
-                                                error={errors.password ? true : false}
-                                                {...register('password', { required: true, minLength: 6 })}
-                                                
-                                            />
-                                        </Grid>
-                                    </Grid>
+
                                     <div className={classes.wrapper}>
                                         <Button
                                             disabled={!isValid}
@@ -179,26 +160,19 @@ export default function Login() {
                                             className={classes.submit}
 
                                         >
-                                            Login
+                                            Reset Password
                                         </Button>
                                     </div>
-
-                                    <Box display="flex" flexDirection="row-reverse">
-                                        <Link to="/forgot" variant="body2" className={classes.forgot}>
-                                            Forgot password?
-                                        </Link>
-                                    </Box>
                                 </form>
                             </div>
                         </CardContent>
                     </Card>
                     <Box mt={1} className={classes.cardbg}>
-                        <Button variant="outlined" size="medium" fullWidth className={classes.link}>
-                            No account?&nbsp;
-                            <Link to="/new" variant="body2" align="center" className={classes.link}>
-                                Create one!
-                            </Link>
-                        </Button>
+                        <Link to="/login" variant="body2" align="center" className={classes.link} style={{ textDecoration: 'none' }}>
+                            <Button variant="outlined" size="medium" fullWidth className={classes.link}>
+                                Login
+                            </Button>
+                        </Link>
                     </Box>
                 </Container>
             </Grid>

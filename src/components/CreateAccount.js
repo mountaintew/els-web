@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import locations from '../locations.json'
 import { makeStyles } from '@material-ui/core/styles';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
-import { amber } from '@material-ui/core/colors';
+import { amber, blueGrey } from '@material-ui/core/colors';
 import MuiAlert from '@material-ui/lab/Alert';
 import { useForm } from 'react-hook-form'
 
@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useHistory, Link } from 'react-router-dom'
 
 import firebase from '../util/firebase';
-import { AddAlertTwoTone } from '@material-ui/icons';
+import { AddAlertTwoTone, Label } from '@material-ui/icons';
 
 
 function Alert(props) {
@@ -21,7 +21,8 @@ function Alert(props) {
 
 const useStyles = makeStyles((theme) => ({
     body: {
-        backgroundColor: amber
+
+        backgroundColor: blueGrey.A100,
     },
     paper: {
         display: 'flex',
@@ -49,9 +50,10 @@ const useStyles = makeStyles((theme) => ({
         left: '45%',
         right: '50%'
     },
-    cardbg: {
-        marginTop: theme.spacing(12)
-    }
+    link: {
+        textTransform: 'capitalize',
+        color: '#222',
+    },
 }));
 
 function CreateAccount() {
@@ -132,7 +134,7 @@ function CreateAccount() {
                     clearErrors("mobileNumber")
                     setError("mobileNumber", {
                         type: "manual",
-                        message: "Mobile number is already in use by another account."
+                        message: "Mobile number already in use."
                     });
                 } else {
                     setFormStep(cur => cur + 1)
@@ -251,274 +253,299 @@ function CreateAccount() {
         }
     }
     return (
-        <Container component="main" maxWidth="xs" >
-            <CssBaseline />
-            <Card className={classes.cardbg} variant="outlined">
-                <CardContent>
-                    <div className={classes.paper}>
-                        <Avatar className={classes.avatar}>
-                            <LocationOnIcon />
-                        </Avatar>
-                        <Typography component="h1" variant="h5">
-                            Create Account
+        <Grid
+            container
+            spacing={0}
+            direction="column"
+            alignItems="center"
+            justify="center"
+            style={{ minHeight: '100vh' }}
+        >
+
+            <Container component="main" maxWidth="xs" >
+                <CssBaseline />
+                <Card className={classes.cardbg} elevation={5}>
+                    <CardContent>
+                        <div className={classes.paper}>
+                            <Avatar className={classes.avatar}>
+                                <LocationOnIcon />
+                            </Avatar>
+                            <Typography component="h1" variant="h5">
+                                Create Account
                         </Typography>
-                        <form className={classes.form} noValidate autoComplete="off" onSubmit={handleFormSubmit}>
-                            {/* ########### Section 0 ########### */}
-                            {formStep === 0 && (
-                                <section>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <Typography variant="h6">
-                                                Login Credentials
-                                            </Typography>
-                                        </Grid>
-                                        <Grid item xs={12}>
+                            <form className={classes.form} noValidate autoComplete="off" onSubmit={handleFormSubmit}>
+                                {/* ########### Section 0 ########### */}
+                                {formStep === 0 && (
+                                    <section>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
+                                                    Login Credentials
+                                                </Button>
+                                            </Grid>
+                                            <Grid item xs={12}>
 
-                                            <TextField
-                                                id="email"
-                                                required
-                                                variant="outlined"
-                                                label="Email"
-                                                fullWidth
-                                                error={errors.email}
-                                                name="email"
-                                                defaultValue={watch('email') ? watch('email') : ''}
-                                                {...register('email',
-                                                    { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
-                                                )}
-                                                helperText={emailErr()}
-                                            />
+                                                <TextField
+                                                    id="email"
+                                                    required
+                                                    variant="outlined"
+                                                    label="Email"
+                                                    fullWidth
+                                                    error={errors.email ? true : false}
+                                                    name="email"
+                                                    defaultValue={watch('email') ? watch('email') : ''}
+                                                    {...register('email',
+                                                        { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
+                                                    )}
+                                                    helperText={emailErr()}
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="password"
-                                                id="password"
-                                                required
-                                                variant="outlined"
-                                                label="Password"
-                                                fullWidth
-                                                type="password"
-                                                defaultValue={watch('password') ? watch('password') : ''}
-                                                error={errors.password}
-                                                {...register('password', { required: true, minLength: 6 })}
-                                                helperText={errors.password && 'Password must be at least 6 characters long'}
-                                            />
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    name="password"
+                                                    id="password"
+                                                    required
+                                                    variant="outlined"
+                                                    label="Password"
+                                                    fullWidth
+                                                    type="password"
+                                                    defaultValue={watch('password') ? watch('password') : ''}
+                                                    
+                                                    error={errors.password ? true : false}
+                                                    {...register('password', { required: true, minLength: 6 })}
+                                                    helperText={errors.password && 'Password must be at least 6 characters long'}
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                </section>
-                            )}
-                            {/* ########### Section 0 ########### */}
+                                    </section>
+                                )}
+                                {/* ########### Section 0 ########### */}
 
-                            {/* ########### Section 1 ########### */}
-                            {formStep === 1 && (
-                                <section>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <Typography variant="h6">
-                                                Admin Information
-                                            </Typography>
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="mobile"
-                                                id="mobile"
-                                                required
-                                                variant="outlined"
-                                                label="Mobile Number"
-                                                fullWidth
-                                                defaultValue={watch('mobileNumber') ? watch('mobileNumber') : ''}
-                                                {...register('mobileNumber', {
-                                                    required: true,
-                                                    maxLength: 10,
-                                                    minLength: 10,
-                                                    pattern: /\d+/
-                                                }
-                                                )}
-                                                error={errors.mobileNumber}
-                                                InputProps={{
-                                                    startAdornment: <InputAdornment position="start">+63</InputAdornment>,
-                                                }}
-                                                helperText={numErr()}
-                                            />
+                                {/* ########### Section 1 ########### */}
+                                {formStep === 1 && (
+                                    <section>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
+                                                    Admin Information
+                                                </Button>
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    name="mobile"
+                                                    id="mobile"
+                                                    required
+                                                    variant="outlined"
+                                                    label="Mobile Number"
+                                                    fullWidth
+                                                    defaultValue={watch('mobileNumber') ? watch('mobileNumber') : ''}
+                                                    {...register('mobileNumber', {
+                                                        required: true,
+                                                        maxLength: 10,
+                                                        minLength: 10,
+                                                        pattern: /\d+/
+                                                    }
+                                                    )}
+                                                    error={errors.mobileNumber}
+                                                    InputProps={{
+                                                        startAdornment: <InputAdornment position="start">+63</InputAdornment>,
+                                                    }}
+                                                    helperText={numErr()}
+                                                />
 
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="firstname"
-                                                id="firstname"
-                                                required
-                                                variant="outlined"
-                                                fullWidth
-                                                label="First Name"
-                                                defaultValue={watch('firstname') ? watch('firstname') : ''}
-                                                {...register('firstname', { required: true })}
-                                                error={errors.firstname}
-                                                helperText={errors.firstname && 'First Name is required.'}
-                                                InputProps={{ style: { textTransform: 'capitalize' } }}
-                                            />
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    name="firstname"
+                                                    id="firstname"
+                                                    required
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    label="First Name"
+                                                    defaultValue={watch('firstname') ? watch('firstname') : ''}
+                                                    {...register('firstname', { required: true, pattern: /^[a-zA-Z]{2,30}$/ })}
+                                                    error={errors.firstname}
+                                                    helperText={errors.firstname && 'First Name is required.'}
+                                                    InputProps={{ style: { textTransform: 'capitalize' } }}
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="lastname"
-                                                id="lastname"
-                                                required
-                                                variant="outlined"
-                                                fullWidth
-                                                label="Last Name"
-                                                defaultValue={watch('lastname') ? watch('lastname') : ''}
-                                                {...register('lastname', { required: true })}
-                                                error={errors.lastname}
-                                                helperText={errors.lastname && 'Last Name is required.'}
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    name="lastname"
+                                                    id="lastname"
+                                                    required
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    label="Last Name"
+                                                    defaultValue={watch('lastname') ? watch('lastname') : ''}
+                                                    {...register('lastname', { required: true, pattern: /^[a-zA-Z]{2,30}$/ })}
+                                                    error={errors.lastname}
+                                                    helperText={errors.lastname && 'Last Name is required.'}
 
-                                            />
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                name="eid"
-                                                id="eid"
-                                                required
-                                                variant="outlined"
-                                                fullWidth
-                                                defaultValue={watch('eid') ? watch('eid') : ''}
-                                                label="Employee ID"
-                                                {...register('eid', { required: true })}
-                                                error={errors.eid}
-                                                helperText={errors.eid && 'Employee ID is required.'}
-                                            />
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    name="eid"
+                                                    id="eid"
+                                                    required
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    defaultValue={watch('eid') ? watch('eid') : ''}
+                                                    label="Employee ID"
+                                                    {...register('eid', { required: true })}
+                                                    error={errors.eid}
+                                                    helperText={errors.eid && 'Employee ID is required.'}
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                </section>
-                            )}
-                            {/* ########### Section 1 ########### */}
+                                    </section>
+                                )}
+                                {/* ########### Section 1 ########### */}
 
-                            {/* ########### Section 2 ########### */}
-                            {formStep === 2 && (
-                                <section>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <Typography variant="h6" >
-                                                Admin Location Scope
-                                            </Typography>
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <FormControl variant="outlined"
-                                                fullWidth
-                                                error={errors.region}>
-                                                <InputLabel id="select-region-label">Select Region</InputLabel>
-                                                <Select
-                                                    {...register('region', { required: true })}
-                                                    labelId="select-region"
-                                                    id="select-region"
-                                                    value={region}
-                                                    onChange={regionOnChange}
-                                                    label="Select Region"
-                                                >
-                                                    <MenuItem value="">
-                                                        <em>Select Region</em>
-                                                    </MenuItem>
-                                                    {regionOptions}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2} >
-                                        <Grid item xs={12}>
-                                            <Box display={region === '' ? 'none' : 'block'}>
+                                {/* ########### Section 2 ########### */}
+                                {formStep === 2 && (
+                                    <section>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
+                                                    Admin Information
+                                                </Button>
+                                            </Grid>
+                                            <Grid item xs={12}>
                                                 <FormControl variant="outlined"
                                                     fullWidth
-                                                    error={errors.province}
-                                                >
-                                                    <InputLabel id="select-province-label">Select {region === "NCR" ? 'District' : 'Province'}</InputLabel>
+                                                    error={errors.region}>
+                                                    <InputLabel id="select-region-label">Select Region</InputLabel>
                                                     <Select
-                                                        {...register('province', { required: true })}
-                                                        labelId="select-province"
-                                                        id="select-province"
-                                                        value={province}
-                                                        onChange={provinceOnChange}
-                                                        label="Select Province"
+                                                        {...register('region', { required: true })}
+                                                        labelId="select-region"
+                                                        id="select-region"
+                                                        value={region}
+                                                        onChange={regionOnChange}
+                                                        label="Select Region"
                                                     >
                                                         <MenuItem value="">
-                                                            <em>Select {region === "NCR" ? 'District' : 'Province'}</em>
+                                                            <em>Select Region</em>
                                                         </MenuItem>
-                                                        {provinceOptions}
+                                                        {regionOptions}
                                                     </Select>
                                                 </FormControl>
-                                            </Box>
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <Box display={province === '' ? 'none' : 'block'}>
-                                                <FormControl variant="outlined"
-                                                    fullWidth
-                                                    error={errors.municipality}>
-                                                    <InputLabel id="select-muni-label">Select Municipality</InputLabel>
-                                                    <Select
-                                                        labelId="select-muni"
-                                                        id="select-muni"
-                                                        {...register('municipality', { required: true })}
-                                                        value={muni}
-                                                        onChange={muniOnChange}
-                                                        label="Select Municipality"
+                                        <Grid container spacing={2} >
+                                            <Grid item xs={12}>
+                                                <Box display={region === '' ? 'none' : 'block'}>
+                                                    <FormControl variant="outlined"
+                                                        fullWidth
+                                                        error={errors.province}
                                                     >
-                                                        <MenuItem value="">
-                                                            <em>Select Municipality</em>
-                                                        </MenuItem>
-                                                        {muniOptions}
-                                                    </Select>
-                                                </FormControl>
-                                            </Box>
+                                                        <InputLabel id="select-province-label">Select {region === "NCR" ? 'District' : 'Province'}</InputLabel>
+                                                        <Select
+                                                            {...register('province', { required: true })}
+                                                            labelId="select-province"
+                                                            id="select-province"
+                                                            value={province}
+                                                            onChange={provinceOnChange}
+                                                            label="Select Province"
+                                                        >
+                                                            <MenuItem value="">
+                                                                <em>Select {region === "NCR" ? 'District' : 'Province'}</em>
+                                                            </MenuItem>
+                                                            {provinceOptions}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
-                                            <Box display={muni === '' ? 'none' : 'block'}>
-                                                <FormControl variant="outlined"
-                                                    fullWidth
-                                                    error={errors.barangay}>
-                                                    <InputLabel id="select-barangay-label">Select Barangay</InputLabel>
-                                                    <Select
-                                                        labelId="select-barangay"
-                                                        id="select-barangay"
-                                                        {...register('barangay', { required: true })}
-                                                        value={barangay}
-                                                        onChange={barangayOnChange}
-                                                        label="Select Barangay"
-
-                                                    >
-                                                        <MenuItem value="">
-                                                            <em>Select Barangay</em>
-                                                        </MenuItem>
-                                                        {barangayOptions}
-                                                    </Select>
-                                                </FormControl>
-                                            </Box>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Box display={province === '' ? 'none' : 'block'}>
+                                                    <FormControl variant="outlined"
+                                                        fullWidth
+                                                        error={errors.municipality}>
+                                                        <InputLabel id="select-muni-label">Select Municipality</InputLabel>
+                                                        <Select
+                                                            labelId="select-muni"
+                                                            id="select-muni"
+                                                            {...register('municipality', { required: true })}
+                                                            value={muni}
+                                                            onChange={muniOnChange}
+                                                            label="Select Municipality"
+                                                        >
+                                                            <MenuItem value="">
+                                                                <em>Select Municipality</em>
+                                                            </MenuItem>
+                                                            {muniOptions}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                </section>
-                            )}
-                            {/* ########### Section 2 ########### */}
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Box display={muni === '' ? 'none' : 'block'}>
+                                                    <FormControl variant="outlined"
+                                                        fullWidth
+                                                        error={errors.barangay}>
+                                                        <InputLabel id="select-barangay-label">Select Barangay</InputLabel>
+                                                        <Select
+                                                            labelId="select-barangay"
+                                                            id="select-barangay"
+                                                            {...register('barangay', { required: true })}
+                                                            value={barangay}
+                                                            onChange={barangayOnChange}
+                                                            label="Select Barangay"
+
+                                                        >
+                                                            <MenuItem value="">
+                                                                <em>Select Barangay</em>
+                                                            </MenuItem>
+                                                            {barangayOptions}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                            </Grid>
+                                        </Grid>
+                                    </section>
+                                )}
+                                {/* ########### Section 2 ########### */}
 
 
-                            <Snackbar open={snack} autoHideDuration={6000} onClose={handleClose}>
-                                <Alert onClose={handleClose} severity={severity}>
-                                    {snackMessage}
-                                </Alert>
-                            </Snackbar>
-                            {renderButton()}
-                        </form>
-                    </div>
-                </CardContent>
-            </Card>
-        </Container>
+                                <Snackbar open={snack} autoHideDuration={6000} onClose={handleClose}>
+                                    <Alert onClose={handleClose} severity={severity}>
+                                        {snackMessage}
+                                    </Alert>
+                                </Snackbar>
+                                {renderButton()}
+                            </form>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {
+                    formStep < 1 ?
+                            <Box mt={1} className={classes.cardbg}>
+                            <Button variant="outlined" size="medium" fullWidth className={classes.link}>
+                                Already have an account?&nbsp;
+                                    <Link to="/login" variant="body2" align="center" className={classes.link}>
+                                    Login
+                                    </Link>
+                            </Button>
+                            </Box>
+                         : ''
+                }
+               
+            </Container>
+        </Grid>
     )
 }
 

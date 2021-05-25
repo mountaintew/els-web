@@ -10,6 +10,7 @@ const useStyles = makeStyles((theme) => ({
   button: {
     marginTop: theme.spacing(1),
     marginRight: theme.spacing(1),
+    textAlign: theme.spacing(),
   },
   actionsContainer: {
     marginBottom: theme.spacing(2),

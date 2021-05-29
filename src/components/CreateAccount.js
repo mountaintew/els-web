@@ -1,9 +1,9 @@
-import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, TextField, Typography } from '@material-ui/core'
+import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, Step, StepLabel, Stepper, TextField, Typography } from '@material-ui/core'
 import React, { useState } from 'react'
 import locations from '../locations.json'
 import { makeStyles } from '@material-ui/core/styles';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
-import { amber, blueGrey } from '@material-ui/core/colors';
+import { amber } from '@material-ui/core/colors';
 import MuiAlert from '@material-ui/lab/Alert';
 import { useForm } from 'react-hook-form'
 
@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useHistory, Link } from 'react-router-dom'
 
 import firebase from '../util/firebase';
-import { AddAlertTwoTone, Label } from '@material-ui/icons';
+import Login from './Login';
 
 
 function Alert(props) {
@@ -20,10 +20,6 @@ function Alert(props) {
 
 
 const useStyles = makeStyles((theme) => ({
-    body: {
-
-        backgroundColor: blueGrey.A100,
-    },
     paper: {
         display: 'flex',
         flexDirection: 'column',
@@ -45,30 +41,40 @@ const useStyles = makeStyles((theme) => ({
     },
     buttonProgress: {
         color: amber,
-        position: 'relative',
-        top: '50%',
-        left: '45%',
-        right: '50%'
+        position: 'absolute',
+        right: '5%',
+        bottom: '30%',
     },
     link: {
         textTransform: 'capitalize',
         color: '#222',
     },
+    root: {
+        width: '100%',
+    },
 }));
+
+function getSteps() {
+    return ['Login Credentials', 'Admin Information', 'Admin Locality'];
+}
 
 function CreateAccount() {
     const classes = useStyles();
     const { clearErrors, setError, watch, handleSubmit, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
+
     const [severity, setSeverity] = useState('')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
-
+    const [checkMail, setCheckMail] = useState(false)
+    const [checkMobile, setCheckMobile] = useState(false)
     const [submitBtn, setSubmitBtn] = useState(false)
     const [formStep, setFormStep] = useState(0)
 
-    const { signup } = useAuth()
+    const { currentUser, signup } = useAuth()
     const history = useHistory()
     const dbRef = firebase.database();
+
+    const steps = getSteps();
 
     const renderButton = () => {
         if (formStep > 2) {
@@ -111,6 +117,7 @@ function CreateAccount() {
 
     const completeFormStep = () => {
         if (formStep === 0) {
+            setCheckMail(true)
             dbRef.ref('/administrators').orderByChild("email").equalTo(watch('email')).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     clearErrors("email")
@@ -118,17 +125,21 @@ function CreateAccount() {
                         type: "manual",
                         message: "Email already exists."
                     });
+                    setCheckMail(false)
                 } else {
+                    setCheckMail(false)
                     setFormStep(cur => cur + 1)
                 }
             }).catch((error) => {
                 setSnack(true)
                 setSeverity('error')
                 setSnackMessage('Connection Lost')
+                setCheckMail(false)
             });
         }
 
         if (formStep === 1) {
+            setCheckMobile(true)
             dbRef.ref('/administrators').orderByChild("mobileNumber").equalTo(watch('mobileNumber')).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     clearErrors("mobileNumber")
@@ -136,13 +147,16 @@ function CreateAccount() {
                         type: "manual",
                         message: "Mobile number already in use."
                     });
+                    setCheckMobile(false)
                 } else {
                     setFormStep(cur => cur + 1)
+                    setCheckMobile(false)
                 }
             }).catch((error) => {
                 setSnack(true)
                 setSeverity('error')
                 setSnackMessage('Connection Lost')
+                setCheckMobile(false)
             });
         }
     }
@@ -243,12 +257,14 @@ function CreateAccount() {
                     } else {
                         signup(watch('email'), watch('password'))
                         history.push("/login")
+                        { <Login register={'success'} /> }
                     }
                 });
             } catch (error) {
                 setSnack(true)
                 setSeverity('error')
                 setSnackMessage('Connection Lost')
+                console.log("error" + error)
             }
         }
     }
@@ -264,6 +280,7 @@ function CreateAccount() {
 
             <Container component="main" maxWidth="xs" >
                 <CssBaseline />
+                <Box mt={5} mb={5}>
                 <Card className={classes.cardbg} elevation={5}>
                     <CardContent>
                         <div className={classes.paper}>
@@ -272,33 +289,40 @@ function CreateAccount() {
                             </Avatar>
                             <Typography component="h1" variant="h5">
                                 Create Account
-                        </Typography>
+                            </Typography>
+                            <div className={classes.root}>
+                                <Stepper alternativeLabel activeStep={formStep}>
+                                    {steps.map((label) => (
+                                        <Step key={label}>
+                                            <StepLabel>{label}</StepLabel>
+                                        </Step>
+                                    ))}
+                                </Stepper>
+                            </div>
                             <form className={classes.form} noValidate autoComplete="off" onSubmit={handleFormSubmit}>
                                 {/* ########### Section 0 ########### */}
                                 {formStep === 0 && (
                                     <section>
                                         <Grid container spacing={2}>
                                             <Grid item xs={12}>
-                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
-                                                    Login Credentials
-                                                </Button>
-                                            </Grid>
-                                            <Grid item xs={12}>
+                                                <div className={classes.wrapper}>
+                                                    <TextField
+                                                        id="email"
+                                                        required
+                                                        variant="outlined"
+                                                        label="Email"
+                                                        fullWidth
+                                                        error={errors.email ? true : false}
+                                                        name="email"
+                                                        defaultValue={watch('email') ? watch('email') : ''}
+                                                        {...register('email',
+                                                            { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
+                                                        )}
+                                                        helperText={emailErr()}
+                                                    />
+                                                    {checkMail && <CircularProgress size={24} className={classes.buttonProgress} />}
+                                                </div>
 
-                                                <TextField
-                                                    id="email"
-                                                    required
-                                                    variant="outlined"
-                                                    label="Email"
-                                                    fullWidth
-                                                    error={errors.email ? true : false}
-                                                    name="email"
-                                                    defaultValue={watch('email') ? watch('email') : ''}
-                                                    {...register('email',
-                                                        { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
-                                                    )}
-                                                    helperText={emailErr()}
-                                                />
                                             </Grid>
                                         </Grid>
                                         <Grid container spacing={2}>
@@ -312,7 +336,7 @@ function CreateAccount() {
                                                     fullWidth
                                                     type="password"
                                                     defaultValue={watch('password') ? watch('password') : ''}
-                                                    
+
                                                     error={errors.password ? true : false}
                                                     {...register('password', { required: true, minLength: 6 })}
                                                     helperText={errors.password && 'Password must be at least 6 characters long'}
@@ -326,35 +350,32 @@ function CreateAccount() {
                                 {/* ########### Section 1 ########### */}
                                 {formStep === 1 && (
                                     <section>
-                                        <Grid container spacing={2}>
+                                        <Grid container spacing={2} mt={2}>
                                             <Grid item xs={12}>
-                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
-                                                    Admin Information
-                                                </Button>
-                                            </Grid>
-                                            <Grid item xs={12}>
-                                                <TextField
-                                                    name="mobile"
-                                                    id="mobile"
-                                                    required
-                                                    variant="outlined"
-                                                    label="Mobile Number"
-                                                    fullWidth
-                                                    defaultValue={watch('mobileNumber') ? watch('mobileNumber') : ''}
-                                                    {...register('mobileNumber', {
-                                                        required: true,
-                                                        maxLength: 10,
-                                                        minLength: 10,
-                                                        pattern: /\d+/
-                                                    }
-                                                    )}
-                                                    error={errors.mobileNumber}
-                                                    InputProps={{
-                                                        startAdornment: <InputAdornment position="start">+63</InputAdornment>,
-                                                    }}
-                                                    helperText={numErr()}
-                                                />
-
+                                                <div className={classes.wrapper}>
+                                                    <TextField
+                                                        name="mobile"
+                                                        id="mobile"
+                                                        required
+                                                        variant="outlined"
+                                                        label="Mobile Number"
+                                                        fullWidth
+                                                        defaultValue={watch('mobileNumber') ? watch('mobileNumber') : ''}
+                                                        {...register('mobileNumber', {
+                                                            required: true,
+                                                            maxLength: 10,
+                                                            minLength: 10,
+                                                            pattern: /\d+/
+                                                        }
+                                                        )}
+                                                        error={errors.mobileNumber}
+                                                        InputProps={{
+                                                            startAdornment: <InputAdornment position="start">+63</InputAdornment>,
+                                                        }}
+                                                        helperText={numErr()}
+                                                    />
+                                                    {checkMobile && <CircularProgress size={24} className={classes.buttonProgress} />}
+                                                </div>
                                             </Grid>
                                         </Grid>
                                         <Grid container spacing={2}>
@@ -415,11 +436,6 @@ function CreateAccount() {
                                 {formStep === 2 && (
                                     <section>
                                         <Grid container spacing={2}>
-                                            <Grid item xs={12}>
-                                                <Button size="small" fullWidth variant="disabled" className={classes.link}>
-                                                    Admin Information
-                                                </Button>
-                                            </Grid>
                                             <Grid item xs={12}>
                                                 <FormControl variant="outlined"
                                                     fullWidth
@@ -530,20 +546,20 @@ function CreateAccount() {
                         </div>
                     </CardContent>
                 </Card>
-
+                </Box>
                 {
                     formStep < 1 ?
-                            <Box mt={1} className={classes.cardbg}>
+                        <Box mt={1} className={classes.cardbg}>
                             <Button variant="outlined" size="medium" fullWidth className={classes.link}>
                                 Already have an account?&nbsp;
                                     <Link to="/login" variant="body2" align="center" className={classes.link}>
                                     Login
                                     </Link>
                             </Button>
-                            </Box>
-                         : ''
+                        </Box>
+                        : ''
                 }
-               
+
             </Container>
         </Grid>
     )

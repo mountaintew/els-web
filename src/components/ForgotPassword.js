@@ -64,7 +64,6 @@ export default function ForgotPassword() {
     const [snack, setSnack] = useState(false)
 
     const { resetpassword } = useAuth()
-    const history = useHistory()
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -91,6 +90,11 @@ export default function ForgotPassword() {
                     setSnackMessage("Account doesn't exist.")
                     setSeverity("error")
                     break;
+                default:
+                    setSnack(false)
+                    setSnack(true)
+                    setSnackMessage("Connection Lost.")
+                    setSeverity("error")
             }
 
         }
@@ -104,7 +108,7 @@ export default function ForgotPassword() {
     };
 
     return (
-        <>
+        <div>
             <Grid
                 container
                 spacing={0}
@@ -122,7 +126,7 @@ export default function ForgotPassword() {
                                     <LocationOnIcon />
                                 </Avatar>
                                 <Typography component="h1" variant="h5">
-                                    Forgot Password
+                                    Password Recovery
                                 </Typography>
                                 <form className={classes.form} noValidate autoComplete="off" onSubmit={handleSubmit}>
                                     {/* onSubmit={handleFormSubmit} */}
@@ -181,6 +185,6 @@ export default function ForgotPassword() {
                     {snackMessage}
                 </Alert>
             </Snackbar>
-        </>
+        </div>
     )
 }

@@ -55,17 +55,25 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-export default function Login() {
+export default function Login(props) {
     const classes = useStyles();
-    const { watch, register, formState: { errors, isValid }, } = useForm({ mode: "all" });
-
+    const { watch, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
+    
     const [severity, setSeverity] = useState('')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
-
+    const [tfDisabled, setTfDisabled] = useState(false)
     
-    const { login } = useAuth()
+    const { currentUser, login } = useAuth()
     const history = useHistory()
+
+    const [submitBtn,setSubmitBtn] = useState(false)
+
+    if (props.register === 'success'){
+        setSnack(true)
+        setSnackMessage('Account created successfully. You may now log in.')
+        setSeverity('success')
+    }
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -76,14 +84,11 @@ export default function Login() {
             setSeverity("success")
             history.push("/")
         } catch(error) {
-            setSnack(true)
-            setSnackMessage(error.code)
-            setSeverity("error")
             switch(error.code){
                 case "auth/wrong-password":
                     setSnack(false)
                     setSnack(true)
-                    setSnackMessage("Invalid Username or Password")
+                    setSnackMessage("Invalid Username or Password.")
                     setSeverity("error")
                     break;
                 case "auth/too-many-requests":
@@ -91,6 +96,9 @@ export default function Login() {
                     setSnack(true)
                     setSnackMessage("Too many login attempts, try again later.")
                     setSeverity("error")
+                    unregister("email",  { keepDefaultValue: false })
+                    unregister("password",  { keepDefaultValue: false })
+                    setTfDisabled(true)
                     break;
                 case "auth/user-not-found":
                     setSnack(false)
@@ -98,9 +106,16 @@ export default function Login() {
                     setSnackMessage("Account doesn't exist.")
                     setSeverity("error")
                     break;
+                default:
 
             }
 
+        }
+    }
+
+    const checkValue = () => {
+        if (!isValid){
+            setSubmitBtn(true)
         }
     }
 
@@ -111,8 +126,10 @@ export default function Login() {
         setSnack(false);
     };
 
+   
+
     return (
-        <>
+        <div>
             <Grid
                 container
                 spacing={0}
@@ -137,6 +154,7 @@ export default function Login() {
                                     <Grid container spacing={2}>
                                         <Grid item xs={12}>
                                             <TextField
+                                                disabled={tfDisabled}
                                                 id="email"
                                                 required
                                                 variant="outlined"
@@ -144,7 +162,7 @@ export default function Login() {
                                                 fullWidth
                                                 error={errors.email ? true : false}
                                                 name="email"
-                                                defaultValue={watch('email') ? watch('email') : ''}
+                                                value={watch('email') ? watch('email') : ''}
                                                 {...register('email',
                                                     { required: true, pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ }
                                                 )}
@@ -155,6 +173,7 @@ export default function Login() {
                                     <Grid container spacing={2}>
                                         <Grid item xs={12}>
                                             <TextField
+                                                disabled={tfDisabled}
                                                 name="password"
                                                 id="password"
                                                 required
@@ -162,9 +181,9 @@ export default function Login() {
                                                 label="Password"
                                                 fullWidth
                                                 type="password"
-                                                defaultValue={watch('password') ? watch('password') : ''}
+                                                value={watch('password') ? watch('password') : ''}
                                                 error={errors.password ? true : false}
-                                                {...register('password', { required: true, minLength: 6 })}
+                                                {...register('password', { required: true })}
                                                 
                                             />
                                         </Grid>
@@ -177,7 +196,6 @@ export default function Login() {
                                             variant="contained"
                                             color="primary"
                                             className={classes.submit}
-
                                         >
                                             Login
                                         </Button>
@@ -207,6 +225,6 @@ export default function Login() {
                     {snackMessage}
                 </Alert>
             </Snackbar>
-        </>
+        </div>
     )
 }

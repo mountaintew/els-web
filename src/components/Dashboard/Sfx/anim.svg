@@ -1,0 +1,11 @@
+
+<div>
+    <svg id="svg" width="50px" height="50px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+        <animate attributeName="r" from="2.3" to="10" dur="1.5s" begin="0s" repeatCount="indefinite"
+            fill="freeze" id="circ-anim" />
+        <animate  attributeType="CSS" attributeName="opacity" from="1" to="0" dur="1.5s" begin="0s"
+            repeatCount="indefinite" fill="freeze" id="circ-anim" />
+        <circle id="back" cx="10" cy="10" r="6.5" stroke-width="1" />
+        <circle class="front" cx="10" cy="10" r="2" />
+    </svg>
+</div>

@@ -79,9 +79,6 @@ export default function Login(props) {
         e.preventDefault()
         try {
             await login(watch('email'), watch('password'))
-            setSnack(true)
-            setSnackMessage("Login Successful")
-            setSeverity("success")
             history.push("/")
         } catch(error) {
             switch(error.code){

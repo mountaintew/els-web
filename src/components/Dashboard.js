@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { fade, makeStyles, withStyles } from '@material-ui/core/styles';
-import { AppBar, Badge, Box, Button, Container, Divider, Drawer, Grid, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem, Paper, SwipeableDrawer, Toolbar, Typography } from '@material-ui/core';
+import { CssBaseline, useMediaQuery, Accordion, AccordionDetails, AccordionSummary, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormHelperText, Grid, IconButton, InputBase, InputLabel, List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem, NativeSelect, Paper, Select, SwipeableDrawer, Toolbar, Typography, Snackbar, Avatar } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SearchIcon from '@material-ui/icons/Search';
@@ -15,18 +15,60 @@ import LiveMap from './Dashboard/LiveMap';
 import Residents from './Dashboard/Residents';
 import firebase from '../util/firebase';
 import Geocode from "react-geocode";
+import { ExpandMore } from '@material-ui/icons';
+import FiberManualRecordIcon from '@material-ui/icons/FiberManualRecord';
+import MuiAlert from '@material-ui/lab/Alert';
+import { amber, grey } from '@material-ui/core/colors';
 
+const BootstrapInput = withStyles((theme) => ({
+    root: {
+        'label + &': {
+            marginTop: theme.spacing(3),
+        },
+    },
+    input: {
+        borderRadius: 4,
+        position: 'relative',
+        fontSize: 16,
+        padding: '10px 26px 10px 12px',
+        // Use the system font instead of the default Roboto font.
+        fontFamily: [
+            '-apple-system',
+            'BlinkMacSystemFont',
+            '"Segoe UI"',
+            'Roboto',
+            '"Helvetica Neue"',
+            'Arial',
+            'sans-serif',
+            '"Apple Color Emoji"',
+            '"Segoe UI Emoji"',
+            '"Segoe UI Symbol"',
+        ].join(','),
+        '&:focus': {
+            borderRadius: 4,
+        },
+    },
+}))(InputBase);
 
 const useStyles = makeStyles((theme) => ({
+    root: {
+        display: 'flex'
+    },
     grow: {
         flexGrow: 1,
         display: 'flex'
     },
-    content: {
-    },
-    container: {
-    },
 
+    content: {
+        flexGrow: 1,
+        height: '100vh',
+        overflow: 'auto',
+    },
+    appBarSpacer: theme.mixins.toolbar,
+    container: {
+        paddingTop: theme.spacing(4),
+        paddingBottom: theme.spacing(4),
+    },
     menuButton: {
         marginRight: theme.spacing(2),
     },
@@ -35,28 +77,22 @@ const useStyles = makeStyles((theme) => ({
         [theme.breakpoints.up('sm')]: {
             display: 'block',
         },
-
     },
     search: {
         position: 'relative',
-        borderRadius: '10px',
-        backgroundColor: fade(theme.palette.common.white, 0.15),
-        '&:hover': {
-            backgroundColor: fade(theme.palette.common.white, 0.25),
-        },
-        marginRight: theme.spacing(2),
+        borderRadius: theme.shape.borderRadius,
+        backgroundColor: 'rgba(255,255,255,0.4)',
         marginLeft: 0,
         width: '100%',
         [theme.breakpoints.up('sm')]: {
-            marginLeft: theme.spacing(3),
-            width: 'auto',
+          marginLeft: theme.spacing(1),
+          width: 'auto',
         },
-    },
+        display: 'flex',
+        alignItems: 'center'
+      },
     searchIcon: {
-        padding: theme.spacing(0, 2),
         height: '100%',
-        position: 'absolute',
-        pointerEvents: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -67,7 +103,6 @@ const useStyles = makeStyles((theme) => ({
     inputInput: {
         padding: theme.spacing(1, 1, 1, 0),
         // vertical padding + font size from searchIcon
-        paddingLeft: `calc(1em + ${theme.spacing(4)}px)`,
         transition: theme.transitions.create('width'),
         width: '100%',
         [theme.breakpoints.up('md')]: {
@@ -94,6 +129,9 @@ const useStyles = makeStyles((theme) => ({
     fixedHeightMap: {
         height: 500,
     },
+    formControl: {
+        minWidth: 80,
+    }
 }));
 
 const StyledMenu = withStyles({
@@ -128,12 +166,32 @@ const StyledMenuItem = withStyles((theme) => ({
     },
 }))(MenuItem);
 
+
+function Alert(props) {
+    return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
 function Dashboard() {
+
     const classes = useStyles();
     const { currentUser, logout } = useAuth()
     const history = useHistory()
     const iOS = process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent); // swipeable on ios devices
     const dbRef = firebase.database();
+    const MINUTE_MS = 60000;
+    const [adminName, setAdminName] = useState('')
+
+    const [severity, setSeverity] = useState('error')
+    const [snackMessage, setSnackMessage] = useState('')
+    const [snack, setSnack] = useState(false)
+    const handleSnackClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnack(false);
+    };
+
+
 
     // Functions ######################
     async function handleLogout() {
@@ -144,6 +202,55 @@ function Dashboard() {
             alert("Failed to Logout")
         }
     }
+
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdminName('')
+            // Main algorithm --------------------------------------------------------------------------------------------
+            // (1) Get all users with timestamp
+            // (2) Get the difference of the current timestamp and the user's last timestamp
+            // (3) Convert the difference into minutes
+            // (4) If the minutes is greater than 5 (minutes) and the location is toggled,
+            // (5) declare it as an emergency, send the coordinates as emergency markers and change user's state to emergency
+
+            dbRef.ref('/Users').orderByChild('timestamp').on('value', (snapshot) => { // (1)
+                if (snapshot.exists()) {
+                    Object.values(snapshot.val()).map((val) => {
+                        if (val.timestamp !== undefined) {
+                            var difference = new Date().getTime() - val.timestamp // (2)
+                            var identifier = difference / 60000 // (3)
+                            if (identifier > 5) { // (4)
+                                if (val.toggled) {
+
+                                    // (5)
+                                    dbRef.ref('/Users/' + val.number + '/state').set('Emergency').catch((error) => {
+                                        console.log('Connection Lost');
+                                    })
+
+                                    dbRef.ref('/Markers/' + val.number).set({
+                                        lat: val.lat,
+                                        lng: val.lng,
+                                        state: "Emergency",
+                                        details: "ELS Generated",
+                                        toggled: val.toggled
+                                        
+                                    }).catch((error) => {
+                                        console.log('Connection Lost');
+                                    })
+                                }
+                            }
+                        }
+                    })
+                }
+            })
+
+
+            // Main algorithm --------------------------------------------------------------------------------------------
+        }, MINUTE_MS);
+
+        return () => clearInterval(interval);
+    }, [])
     // Functions ######################
 
     // Toggles #######################
@@ -160,13 +267,14 @@ function Dashboard() {
         bottom: false,
         right: false,
     });
+
     const toggleDrawer = (anchor, open) => (event) => {
         if (event && event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
             return;
         }
-
         setState({ ...state, [anchor]: open });
     };
+
     const list = (anchor) => (
         <div
             className={clsx(classes.list, {
@@ -191,14 +299,16 @@ function Dashboard() {
     // Generate Center Location ######
     const [lat, setLat] = useState(0.0)
     const [lng, setLng] = useState(0.0)
+    const [locality, setLocality] = useState(null)
     const center = {
         lat: lat,
         lng: lng
     };
-    Geocode.setApiKey("AIzaSyCdj9kwcKpn_7zjZov_wk5-RvsnlMmFVOw");
+    Geocode.setApiKey(process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
     Geocode.setLanguage("en");
     Geocode.setRegion("ph");
     Geocode.setLocationType("ROOFTOP");
+
     dbRef.ref('/administrators').orderByChild("email").equalTo(currentUser.email).once('value').then((snapshot) => {
         if (snapshot.exists()) {
             const email = Object.keys(snapshot.val())[0]
@@ -211,6 +321,7 @@ function Dashboard() {
                         const { lat, lng } = response.results[0].geometry.location;
                         setLat(lat)
                         setLng(lng)
+
                     },
                     (error) => {
                         console.error(error);
@@ -221,15 +332,90 @@ function Dashboard() {
     }).catch((error) => {
     })
     // Generate Center Location ######
+    const [avatar, setAvatar] = useState('?')
 
-    
+    currentUser.email && dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((snapshot) => {
+        if (snapshot.exists()){
+            Object.values(snapshot.val()).map((val) => {
+                setAvatar(val.firstname.charAt(0).toUpperCase())
+            })
+        }
+    });
 
+    // Search By 
+    const [searchBy, setSearchBy] = useState('lastname')
+    const [searchPlaceholder, setSearchPlaceholder] = useState('Search...')
+    const [searchTerm, setSearchTerm] = useState('')
+    const [openResultDialog, setResultDialog] = useState(false)
+    const [searchResult, setSearchResult] = useState(null)
+    const [expanded, setExpanded] = React.useState(false);
+
+    const handleAccordionChange = (panel) => (event, isExpanded) => {
+        setExpanded(isExpanded ? panel : false);
+    };
+
+    const handleSearchBy = (e) => {
+        setSearchBy(e.target.value)
+
+        switch (e.target.value) {
+            case 'number':
+                setSearchPlaceholder('+63...')
+                break
+            case 'firstname':
+                setSearchPlaceholder('Search by first name...')
+                break
+            case 'lastname':
+                setSearchPlaceholder('Search by last name...')
+                break
+            case 'fullname':
+                setSearchPlaceholder('Search by full name...')
+                break
+            default:
+                setSearchPlaceholder('Search...')
+        }
+    }
+
+    const handleSearchterm = (e) => {
+        setSearchTerm(e.target.value)
+    }
+
+    const closeResultDialog = () => {
+        setResultDialog(false)
+    }
+
+    const search = () => {
+        searchTerm &&
+            dbRef.ref('/Users').orderByChild(searchBy).equalTo(searchTerm).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    setSearchResult(Object.values(snapshot.val()))
+                    setResultDialog(true)
+                } else {
+                    setSearchResult(null)
+                    setSnack(true)
+                    setSeverity('error')
+                    setSnackMessage('No data found.')
+                }
+            })
+    }
     const fixedHeightMap = clsx(classes.paper, classes.fixedHeightMap);
     const fixedHeightRes = clsx(classes.paper, classes.fixedHeightRes);
     return (
         <div>
-            <div className={classes.grow}>
-                <AppBar position="static">
+
+
+
+            {/* SnackBar ##################### */}
+            <Snackbar open={snack} autoHideDuration={4000} onClose={handleSnackClose}>
+                <Alert onClose={handleSnackClose} severity={severity}>
+                    {snackMessage}
+                </Alert>
+            </Snackbar>
+            {/* SnackBar ##################### */}
+
+            <div className={classes.root}>
+                <CssBaseline />
+                <AppBar position="absolute" style={{backgroundColor: '#eceff1'}} elevation='0' >
+                    <Container>
                     <Toolbar>
                         <IconButton
                             edge="start"
@@ -243,20 +429,47 @@ function Dashboard() {
                         <Typography className={classes.title} variant="h6" noWrap>
                             ELS
                         </Typography>
-                        <div className={classes.search}>
-                            <div className={classes.searchIcon}>
+                        
+                        <div className={classes.grow} />
+                        <div className={classes.search} >
+                            <Button
+                                onClick={search}
+                                className={classes.searchIcon}
+                                style={{ borderRadius: '5px 0px 0px 5px', minWidth: '40px' }}
+                            >
                                 <SearchIcon />
-                            </div>
+                            </Button>
+
                             <InputBase
-                                placeholder="Search…"
+                                placeholder={searchPlaceholder}
                                 classes={{
                                     root: classes.inputRoot,
                                     input: classes.inputInput,
                                 }}
                                 inputProps={{ 'aria-label': 'search' }}
+                                onChange={handleSearchterm}
+                                value={searchTerm}
                             />
+
+                            <FormControl className={classes.margin} >
+                                <Select
+
+                                    value={searchBy}
+                                    onChange={handleSearchBy}
+                                    input={<BootstrapInput />}
+                                    defaultValue={searchBy}
+                                >
+                                    <MenuItem value={'fullname'}>Full Name</MenuItem>
+                                    <MenuItem value={'firstname'}>First Name</MenuItem>
+                                    <MenuItem value={'lastname'}>Last Name</MenuItem>
+                                    <MenuItem value={'number'}>Mobile</MenuItem>
+                                </Select>
+                            </FormControl>
+
                         </div>
-                        <div className={classes.grow} />
+
+
+                        <Typography>{adminName}</Typography>
                         <IconButton
                             edge="end"
                             aria-label="account of current user"
@@ -266,7 +479,7 @@ function Dashboard() {
                             aria-controls="account-menu"
                             aria-haspopup="true"
                         >
-                            <AccountCircleIcon />
+                            <Avatar style={{backgroundColor: '#fcbc20', color: '#222222'}}>{avatar}</Avatar>
                         </IconButton>
                         <StyledMenu
                             id="account-menu"
@@ -311,36 +524,102 @@ function Dashboard() {
                             ))}
                         </div>
                     </Toolbar>
+                    </Container>
                 </AppBar>
-            </div>
-            <main className={classes.content} style={{ height: '100'}}>
+            
+
+            <main className={classes.content} style={{ backgroundColor: '#eceff1' }}>
                 <div className={classes.appBarSpacer} />
-                    <Grid container  spacing={2}>
-                        {/* Live Map */}
+                <Container className={classes.container}>
+                    <Grid container spacing={2}>
                         <Grid item xs={12} md={8} lg={9}>
-                            <Paper className={fixedHeightMap}>
-                                {/* {
-                                    allMarkerLocations.length === 0 ? 
-                                    'Loading' : 
-                                } */}
-                                <LiveMap center={center}  />
+                            <Paper className={fixedHeightMap} elevation='5' style={{borderRadius: '20px'}}>
+                                <LiveMap center={center} />
                             </Paper>
                         </Grid>
-                        {/* Residents Count */}
                         <Grid item xs={12} md={4} lg={3}>
-                            <Paper className={fixedHeightRes}>
-                                <Residents />
+                            <Paper elevation='5' style={{borderRadius: '20px'}}>
+                                <Residents lat={lat} lng={lng} />
                             </Paper>
                         </Grid>
-
-
-                        {/* <Grid item xs={12}>
-                            <Paper className={classes.paper}>
-                                <Orders />
-                            </Paper>
-                        </Grid> */}
                     </Grid>
+                </Container>
             </main>
+
+            </div>
+            <Dialog
+                fullWidth
+                open={openResultDialog}
+                onClose={closeResultDialog}
+
+            >
+                <DialogTitle style={{ backgroundColor: '#eceff1' }}>
+                    {searchResult && searchResult.length + ` matching result${searchResult.length > 1 ? 's' : ''}...`}
+                </DialogTitle>
+                <DialogContent style={{ backgroundColor: '#eceff1' }}>
+
+                    {searchResult && searchResult.map((val) =>
+                        <Accordion
+                            key={val.number}
+                            style={{ backgroundColor: '##cfd8dc' }}
+                            expanded={expanded === val.number}
+                            onChange={handleAccordionChange(val.number)}
+                        >
+                            <AccordionSummary elevation={0} expandIcon={<ExpandMore />}>
+                                <div style={{ alignItems: 'center', display: 'flex' }}>
+                                    {val.state === "Safe" ? <FiberManualRecordIcon style={{ color: 'limegreen' }} /> : <FiberManualRecordIcon style={{ color: 'red' }} />}
+
+                                    <Typography variant="caption">&nbsp;&nbsp;{val.firstname + " " + val.lastname}</Typography>
+                                    <Typography variant="caption">&nbsp;&nbsp;({val.number})</Typography>
+                                </div>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Grid>
+                                    <Typography variant="subtitle2" component="p">
+                                        Last Location Sent: {val.timestamp ? new Date(val.timestamp).toLocaleString() : 'Not known'}
+                                    </Typography>
+                                    <br />
+                                    <Typography variant="caption" component="p">
+                                        Sex: {val.sex}
+                                        <br />
+                                            Age: {val.age}
+                                        <br />
+                                            Height: {val.height}
+                                        <br />
+                                            Weight: {val.weight}
+                                        <br />
+                                            Blood Type: {val.bloodtype}
+                                    </Typography>
+                                    <br />
+                                    <Typography variant="body2">
+                                        Medical Conditions:
+                                        </Typography>
+                                    <Typography variant="caption">
+                                        {val.conditions}
+                                    </Typography>
+                                    <br />
+                                    <br />
+                                    <Typography variant="body2">
+                                        Allergies:
+                                        </Typography>
+                                    <Typography variant="caption">
+                                        {val.allergies}
+                                    </Typography>
+                                    <br />
+                                    <br />
+                                    <Typography variant="body2">
+                                        Medical Notes:
+                                        </Typography>
+                                    <Typography variant="caption">
+                                        {val.mednotes}
+                                    </Typography>
+                                </Grid>
+                            </AccordionDetails>
+                        </Accordion >
+                    )}
+                </DialogContent>
+            </Dialog>
+
 
         </div>
     )

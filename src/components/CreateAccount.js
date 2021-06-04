@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, Step, StepLabel, Stepper, TextField, Typography } from '@material-ui/core'
+import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, Step, StepLabel, Stepper, TextField, Typography } from '@material-ui/core'
 import React, { useState } from 'react'
 import locations from '../locations.json'
 import { makeStyles } from '@material-ui/core/styles';
@@ -60,17 +60,16 @@ function getSteps() {
 
 function CreateAccount() {
     const classes = useStyles();
-    const { clearErrors, setError, watch, handleSubmit, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
+    const { clearErrors, setError, watch, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
 
     const [severity, setSeverity] = useState('')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
     const [checkMail, setCheckMail] = useState(false)
     const [checkMobile, setCheckMobile] = useState(false)
-    const [submitBtn, setSubmitBtn] = useState(false)
     const [formStep, setFormStep] = useState(0)
 
-    const { currentUser, signup } = useAuth()
+    const { signup } = useAuth()
     const history = useHistory()
     const dbRef = firebase.database();
 
@@ -239,8 +238,8 @@ function CreateAccount() {
     async function handleFormSubmit(e) {
         e.preventDefault()
         if (formStep === 2) {
-            try {
-                await dbRef.ref('administrators/' + "+63" + watch('mobileNumber')).set({
+            try {   
+                await dbRef.ref("administrators/+63" + watch('mobileNumber')).set({
                     "email": watch('email'),
                     "password": watch('password'),
                     "mobileNumber": watch('mobileNumber'),
@@ -253,11 +252,10 @@ function CreateAccount() {
                     "barangay": watch('barangay')
                 }, (error) => {
                     if (error) {
-                        alert('error saving')
+                        alert('Error saving.')
                     } else {
                         signup(watch('email'), watch('password'))
                         history.push("/login")
-                        { <Login register={'success'} /> }
                     }
                 });
             } catch (error) {

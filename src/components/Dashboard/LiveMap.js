@@ -11,8 +11,7 @@ import clsx from 'clsx';
 import anim from './Sfx/anim.svg'
 import { IconButton, Accordion, AccordionDetails, AccordionSummary, Avatar, Button, Card, CardActionArea, CardActions, CardContent, Container, Grid, SwipeableDrawer, Typography } from '@material-ui/core';
 import { fade, makeStyles, withStyles } from '@material-ui/core/styles';
-import { ExpandMore, PlayArrow } from '@material-ui/icons';
-import TrafficIcon from '@material-ui/icons/Traffic';
+import { ExpandMore, TrafficIcon } from '@material-ui/icons';
 import WarningRoundedIcon from '@material-ui/icons/WarningRounded';
 import warningicon from './warning.svg'
 const containerStyle = {
@@ -241,7 +240,7 @@ function LiveMap(props) {
         }}>
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                zoom={16}
+                zoom={15}
                 center={props.center}
                 options={options}
                 onClick={() => {

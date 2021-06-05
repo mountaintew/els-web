@@ -124,7 +124,7 @@ const useStyles = makeStyles((theme) => ({
         width: 'auto',
     },
     fixedHeightRes: {
-        height: 240,
+        height: 500,
     },
     fixedHeightMap: {
         height: 500,
@@ -538,7 +538,7 @@ function Dashboard() {
                             </Paper>
                         </Grid>
                         <Grid item xs={12} md={4} lg={3}>
-                            <Paper elevation='5' style={{borderRadius: '20px'}}>
+                            <Paper className={fixedHeightRes} elevation='5' style={{borderRadius: '20px'}}>
                                 <Residents lat={lat} lng={lng} />
                             </Paper>
                         </Grid>

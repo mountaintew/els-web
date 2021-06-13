@@ -3,22 +3,30 @@ import firebase from '../../util/firebase';
 import Geocode from "react-geocode";
 import { useAuth } from '../../contexts/AuthContext'
 import { Avatar, Box, Grid, IconButton, makeStyles, Paper, Typography } from '@material-ui/core';
+import { BorderColor } from '@material-ui/icons';
+
 
 const useStyles = makeStyles((theme) => ({
     paper: {
         textAlign: 'center',
         padding: theme.spacing(2),
-        borderRadius: '0px'
+        borderRadius: '20px',
+        backgroundColor: 'rgba(0,0,0,0)',
 
     },
     paperdata: {
         textAlign: 'center',
         padding: theme.spacing(1),
         borderRadius: '0px',
-
         textAlign: 'center',
+        color: '#222',
+        backgroundColor: 'rgba(0,0,0,0)',
+        boxShadow: 'none'
 
-
+    },
+    glass: {
+        backdropFilter: 'blur(50px)',
+        backgroundColor: 'rgba(255,255,255,0.1)'
     }
 }));
 
@@ -73,12 +81,33 @@ export default function Residents(props) {
                             dbRef.ref('/Users').orderByChild("locality").equalTo(city).on('value', (snapshot) => {
                                 if (snapshot.exists()) {
                                     setResCount(resCount + 1)
+                                } else {
+                                    if (city === "Quezon City") {
+                                        dbRef.ref('/Users').orderByChild("locality").equalTo("Lungsod Quezon").on('value', (snapshot) => {
+                                            if (snapshot.exists()) {
+                                                setResCount(resCount + 1)
+                                            } else {
+                                                setResCount(0)
+                                            }
+                                        })
+                                    }
                                 }
                             })
                             dbRef.ref('/Markers').orderByChild("locality").equalTo(city).on('value', (snapshot) => {
                                 if (snapshot.exists()) {
                                     setEmCount(Object.keys(snapshot.val()).length)
-
+                                } else {
+                                    if (city === "Quezon City") {
+                                        dbRef.ref('/Markers').orderByChild("locality").equalTo("Lungsod Quezon").on('value', (snapshot) => {
+                                            if (snapshot.exists()) {
+                                                setEmCount(Object.keys(snapshot.val()).length)
+                                            } else {
+                                                setEmCount(0)
+                                            }
+                                        })
+                                    } else {
+                                        setEmCount(0)
+                                    }
                                 }
                             })
                             dbRef.ref('/Markers').orderByChild("locality").equalTo(city).on('value', (snapshot) => {
@@ -111,6 +140,56 @@ export default function Residents(props) {
                                     setCrimeem(crime)
                                     setMedem(med)
                                     setOtherem(others)
+                                } else {
+                                    if (city === "Quezon City") {
+                                        dbRef.ref('/Markers').orderByChild("locality").equalTo("Lungsod Quezon").on('value', (snapshot) => {
+                                            if (snapshot.exists()) {
+                                                let flood = 0, fire = 0, accd = 0, crime = 0, med = 0, others = 0
+                                                Object.values(snapshot.val()).map((val) => {
+                                                    switch (val.details) {
+                                                        case 'Flood':
+                                                            flood = flood + 1
+                                                            break
+                                                        case 'Fire':
+                                                            fire = fire + 1
+                                                            break
+                                                        case 'Accident':
+                                                            accd = accd + 1
+                                                            break
+                                                        case 'Crime':
+                                                            crime = crime + 1
+                                                            break
+                                                        case 'Medical':
+                                                            med = med + 1
+                                                            break
+                                                        default:
+                                                            others = others + 1
+                                                    }
+                                                })
+                                                setFloodem(flood)
+                                                setFireem(fire)
+                                                setAccdem(accd)
+                                                setCrimeem(crime)
+                                                setMedem(med)
+                                                setOtherem(others)
+                                            } else {
+                                                setFloodem(0)
+                                                setFireem(0)
+                                                setAccdem(0)
+                                                setCrimeem(0)
+                                                setMedem(0)
+                                                setOtherem(0)
+                                            }
+                                        })
+                                    } else {
+                                        setFloodem(0)
+                                        setFireem(0)
+                                        setAccdem(0)
+                                        setCrimeem(0)
+                                        setMedem(0)
+                                        setOtherem(0)
+                                    }
+
                                 }
                             })
 
@@ -133,22 +212,22 @@ export default function Residents(props) {
 
 
     return (
-        <div style={{ flexGrow: 1, borderRadius: '20px', }}>
+        <div style={{ flexGrow: 1 }}>
             {/* {JSON.stringify(props.locality, null, 2)}
             {Object.values(props.locality)[0]} */}
 
             <Grid
                 container
                 spacing={0}
-                style={{ minHeight: '500px'}}
+                style={{ minHeight: '500px', backgroundColor: 'rgba(0,0,0,0)' }}
             >
-                <Grid item xs={12}>
-                    <Paper className={classes.paper} style={{ backgroundColor: '#b0bec5', color: '#222', borderRadius: '20px 20px 0px 0px' }} >
+                <Grid item xs={12} className={classes.glass} style={{ borderRadius: '20px 20px 0px 0px' }}>
+                    <Paper className={classes.paper} style={{ backgroundColor: 'rgba(0,0,0,0)', color: '#222', borderRadius: '20px 20px 0px 0px' }} >
 
                         <Typography variant="caption">
                             as of {new Date().toLocaleString()}
                         </Typography>
-                        <Typography variant='h1'>
+                        <Typography variant='h1' style={{ color: '#ef5350'}}>
                             {/* {resCount} */}
                             {emCount}
                         </Typography>
@@ -168,11 +247,10 @@ export default function Residents(props) {
                         </Typography>
                     </Paper>
                 </Grid> */}
-                <Grid item xs={6} direction="row"
-                    justify="center"
-                    alignItems="center">
 
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222' }} className={classes.paperdata}>
+
+                <Grid item xs={6} className={classes.glass}>
+                    <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/flood.svg' style={{ padding: '5px', width: '30px', height: '30px', fontSize: '15px' }}></Avatar>
@@ -182,8 +260,8 @@ export default function Residents(props) {
                         <Typography variant="caption">Flood Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6}>
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222' }} className={classes.paperdata}>
+                <Grid item xs={6} className={classes.glass}>
+                    <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/fire.svg' style={{ padding: '5px', width: '30px', height: '30px', fontSize: '15px' }}></Avatar>
@@ -193,8 +271,8 @@ export default function Residents(props) {
                         <Typography variant="caption">Fire Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6}>
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222' }} className={classes.paperdata}>
+                <Grid item xs={6} className={classes.glass}>
+                    <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/accident.svg' style={{ padding: '2px', width: '30px', height: '30px', fontSize: '15px' }}>{accdem}</Avatar>
@@ -204,8 +282,8 @@ export default function Residents(props) {
                         <Typography variant="caption">Accidents</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6}>
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222' }} className={classes.paperdata}>
+                <Grid item xs={6} className={classes.glass}>
+                    <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/crime.svg' style={{ padding: '3px', width: '30px', height: '30px', fontSize: '15px' }}>{crimeem}</Avatar>
@@ -216,8 +294,8 @@ export default function Residents(props) {
                     </Paper>
 
                 </Grid>
-                <Grid item xs={6}>
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222', borderRadius: '0px 0px 0px 20px' }} className={classes.paperdata}>
+                <Grid item xs={6} className={classes.glass} style={{ borderRadius: '0px 0px 0px 20px' }}>
+                    <Paper className={classes.paperdata} style={{ borderRadius: '0px 0px 0px 20px' }}>
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/medical.svg' style={{ padding: '6px', width: '30px', height: '30px', fontSize: '15px' }}>{otherem}</Avatar>
@@ -227,8 +305,8 @@ export default function Residents(props) {
                         <Typography variant="caption">Medical Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6}>
-                    <Paper style={{ backgroundColor: '#eceff1', color: '#222', borderRadius: '0px 0px 20px 0px' }} className={classes.paperdata}>
+                <Grid item xs={6} className={classes.glass} style={{ borderRadius: '0px 0px 20px 0px' }}>
+                    <Paper style={{ borderRadius: '0px 0px 20px 0px' }} className={classes.paperdata}  >
                         <Box>
                             <IconButton size='small'>
                                 <Avatar src='/iconpack/others.svg' style={{ padding: '6px', width: '30px', height: '30px', fontSize: '15px' }}>{otherem}</Avatar>

@@ -41,6 +41,8 @@ const useStyles = makeStyles((theme) => ({
         right: '50%'
     },
     cardbg: {
+        backdropFilter: 'blur(5px)',
+        backgroundImage: 'linear-gradient(to bottom right, rgba(255,255,255,0.4), rgba(255,255,255,0.1))'
     },
     forgot: {
         color: "#424242"
@@ -108,7 +110,11 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div>
+        <div style={{
+            background: 'url(/Wave.svg)',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover'
+        }}>
             <Grid
                 container
                 spacing={0}

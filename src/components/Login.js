@@ -41,6 +41,8 @@ const useStyles = makeStyles((theme) => ({
         right: '50%'
     },
     cardbg: {
+        backdropFilter: 'blur(5px)',
+        backgroundImage: 'linear-gradient(to bottom right, rgba(255,255,255,0.4), rgba(255,255,255,0.1))'
     },
     forgot: {
         color: "#424242"
@@ -58,18 +60,18 @@ const useStyles = makeStyles((theme) => ({
 export default function Login(props) {
     const classes = useStyles();
     const { watch, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
-    
+
     const [severity, setSeverity] = useState('')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
     const [tfDisabled, setTfDisabled] = useState(false)
-    
+
     const { currentUser, login } = useAuth()
     const history = useHistory()
 
-    const [submitBtn,setSubmitBtn] = useState(false)
+    const [submitBtn, setSubmitBtn] = useState(false)
 
-    if (props.register === 'success'){
+    if (props.register === 'success') {
         setSnack(true)
         setSnackMessage('Account created successfully. You may now log in.')
         setSeverity('success')
@@ -80,8 +82,8 @@ export default function Login(props) {
         try {
             await login(watch('email'), watch('password'))
             history.push("/")
-        } catch(error) {
-            switch(error.code){
+        } catch (error) {
+            switch (error.code) {
                 case "auth/wrong-password":
                     setSnack(false)
                     setSnack(true)
@@ -93,8 +95,8 @@ export default function Login(props) {
                     setSnack(true)
                     setSnackMessage("Too many login attempts, try again later.")
                     setSeverity("error")
-                    unregister("email",  { keepDefaultValue: false })
-                    unregister("password",  { keepDefaultValue: false })
+                    unregister("email", { keepDefaultValue: false })
+                    unregister("password", { keepDefaultValue: false })
                     setTfDisabled(true)
                     break;
                 case "auth/user-not-found":
@@ -111,7 +113,7 @@ export default function Login(props) {
     }
 
     const checkValue = () => {
-        if (!isValid){
+        if (!isValid) {
             setSubmitBtn(true)
         }
     }
@@ -123,10 +125,14 @@ export default function Login(props) {
         setSnack(false);
     };
 
-   
+
 
     return (
-        <div>
+        <div style={{
+            background: 'url(/Wave.svg)',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover'
+        }}>
             <Grid
                 container
                 spacing={0}
@@ -137,9 +143,9 @@ export default function Login(props) {
             >
                 <Container component="main" maxWidth="xs">
                     <CssBaseline />
-                    <Card className={classes.cardbg}  elevation={3}>
+                    <Card className={classes.cardbg} elevation={3} color='transparent'>
                         <CardContent>
-                            <div className={classes.paper}>
+                            <div className={classes.paper} >
                                 <Avatar className={classes.avatar}>
                                     <LocationOnIcon />
                                 </Avatar>
@@ -181,7 +187,7 @@ export default function Login(props) {
                                                 value={watch('password') ? watch('password') : ''}
                                                 error={errors.password ? true : false}
                                                 {...register('password', { required: true })}
-                                                
+
                                             />
                                         </Grid>
                                     </Grid>

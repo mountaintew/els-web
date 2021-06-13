@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { fade, makeStyles, withStyles } from '@material-ui/core/styles';
 import { CssBaseline, useMediaQuery, Accordion, AccordionDetails, AccordionSummary, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormHelperText, Grid, IconButton, InputBase, InputLabel, List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem, NativeSelect, Paper, Select, SwipeableDrawer, Toolbar, Typography, Snackbar, Avatar } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SearchIcon from '@material-ui/icons/Search';
 import clsx from 'clsx';
-import LockIcon from '@material-ui/icons/Lock';
-import EditIcon from '@material-ui/icons/Edit';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import { useAuth } from '../contexts/AuthContext'
 import { useHistory, Link } from 'react-router-dom'
 import { Skeleton } from '@material-ui/lab';
@@ -19,6 +16,19 @@ import { ExpandMore } from '@material-ui/icons';
 import FiberManualRecordIcon from '@material-ui/icons/FiberManualRecord';
 import MuiAlert from '@material-ui/lab/Alert';
 import { amber, grey } from '@material-ui/core/colors';
+import Reports from './Dashboard/Reports'
+
+import LockIcon from '@material-ui/icons/Lock';
+import EditIcon from '@material-ui/icons/Edit';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import ArchiveRoundedIcon from '@material-ui/icons/ArchiveRounded';
+import AssignmentRoundedIcon from '@material-ui/icons/AssignmentRounded';
+import PeopleAltRoundedIcon from '@material-ui/icons/PeopleAltRounded';
+import ReactWeather, { useOpenWeather } from 'react-open-weather';
+import AnnouncementRoundedIcon from '@material-ui/icons/AnnouncementRounded';
+import zIndex from '@material-ui/core/styles/zIndex';
+
+
 
 const BootstrapInput = withStyles((theme) => ({
     root: {
@@ -52,8 +62,14 @@ const BootstrapInput = withStyles((theme) => ({
 
 const useStyles = makeStyles((theme) => ({
     root: {
-        display: 'flex'
+        display: 'flex',
+        height: '100vh',
+        background: 'url(/Wave.svg)',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+
     },
+    toolbar: theme.mixins.toolbar,
     grow: {
         flexGrow: 1,
         display: 'flex'
@@ -61,12 +77,14 @@ const useStyles = makeStyles((theme) => ({
 
     content: {
         flexGrow: 1,
-        height: '100vh',
         overflow: 'auto',
     },
     appBarSpacer: theme.mixins.toolbar,
     container: {
         paddingTop: theme.spacing(4),
+        paddingBottom: theme.spacing(4),
+    },
+    containerAlt: {
         paddingBottom: theme.spacing(4),
     },
     menuButton: {
@@ -85,12 +103,12 @@ const useStyles = makeStyles((theme) => ({
         marginLeft: 0,
         width: '100%',
         [theme.breakpoints.up('sm')]: {
-          marginLeft: theme.spacing(1),
-          width: 'auto',
+            marginLeft: theme.spacing(1),
+            width: 'auto',
         },
         display: 'flex',
         alignItems: 'center'
-      },
+    },
     searchIcon: {
         height: '100%',
         display: 'flex',
@@ -108,6 +126,13 @@ const useStyles = makeStyles((theme) => ({
         [theme.breakpoints.up('md')]: {
             width: '20ch',
         },
+
+    },
+    bottomPush: {
+        position: "fixed",
+        bottom: 0,
+        textAlign: "center",
+        width: '250px',
 
     },
     sectionDesktop: {
@@ -166,6 +191,26 @@ const StyledMenuItem = withStyles((theme) => ({
     },
 }))(MenuItem);
 
+const weatherStyle = {
+    fontFamily: 'Montserrat',
+    gradientStart: 'rgba(0,0,0,0)',
+    gradientMid: 'rgba(0,0,0,0)',
+    gradientEnd: 'rgba(0,0,0,0)',
+    locationFontColor: '#222',
+    todayTempFontColor: '#222',
+    todayDateFontColor: '#222',
+    todayRangeFontColor: '#222',
+    todayDescFontColor: '#222',
+    todayInfoFontColor: '#222',
+    todayIconColor: '#212121',
+    forecastBackgroundColor: '#ECEFF1',
+    forecastSeparatorColor: '#DDD',
+    forecastDateColor: '#777',
+    forecastDescColor: '#777',
+    forecastRangeColor: '#777',
+    forecastIconColor: '#4BC4F7',
+};
+
 
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -178,7 +223,7 @@ function Dashboard() {
     const history = useHistory()
     const iOS = process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent); // swipeable on ios devices
     const dbRef = firebase.database();
-    const MINUTE_MS = 60000;
+    const MINUTE_MS = 1000;
     const [adminName, setAdminName] = useState('')
 
     const [severity, setSeverity] = useState('error')
@@ -190,7 +235,15 @@ function Dashboard() {
         }
         setSnack(false);
     };
+    Geocode.setApiKey(process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
+    Geocode.setLanguage("en");
+    Geocode.setRegion("ph");
+    Geocode.setLocationType("ROOFTOP");
 
+    const reportsRef = useRef(null)
+
+    const scrollToReports = () => reportsRef.current.scrollIntoView()
+    // run this function from an event handler or an effect to execute scroll 
 
 
     // Functions ######################
@@ -214,30 +267,59 @@ function Dashboard() {
             // (4) If the minutes is greater than 5 (minutes) and the location is toggled,
             // (5) declare it as an emergency, send the coordinates as emergency markers and change user's state to emergency
 
+            // const checkOnlineStatus = async () => {
+            //     try {
+            //         const online = await fetch("/1pixel.png");
+            //         return online.status >= 200 && online.status < 300; // either true or false
+            //     } catch (err) {
+            //         return false; // definitely offline
+            //     }
+            // };
+
+            // setInterval(async () => {
+            //     const result = await checkOnlineStatus();
+            //     const statusDisplay = document.getElementById("status");
+            //     statusDisplay.textContent = result ? "Online" : "OFFline";
+            // }, 3000); // probably too often, try 30000 for every 30 seconds
+
+
             dbRef.ref('/Users').orderByChild('timestamp').on('value', (snapshot) => { // (1)
                 if (snapshot.exists()) {
                     Object.values(snapshot.val()).map((val) => {
                         if (val.timestamp !== undefined) {
-                            var difference = new Date().getTime() - val.timestamp // (2)
-                            var identifier = difference / 60000 // (3)
-                            if (identifier > 5) { // (4)
-                                if (val.toggled) {
+                            if (val.state === "Emergency") {
 
-                                    // (5)
-                                    dbRef.ref('/Users/' + val.number + '/state').set('Emergency').catch((error) => {
-                                        console.log('Connection Lost');
-                                    })
+                            } else {
+                                var difference = new Date().getTime() - val.timestamp // (2)
+                                var identifier = difference / 60000 // (3)
+                                if (identifier > 5) { // (4)
+                                    if (val.toggled) {
+                                        // (5)
+                                        dbRef.ref('/Users/' + val.number + '/state').set('Emergency').catch((error) => {
+                                            console.log('Connection Lost');
+                                        })
+                                        dbRef.ref('/Users/' + val.number + '/toggled').set(false).catch((error) => {
+                                            console.log('Connection Lost');
+                                            if (error) {
 
-                                    dbRef.ref('/Markers/' + val.number).set({
-                                        lat: val.lat,
-                                        lng: val.lng,
-                                        state: "Emergency",
-                                        details: "ELS Generated",
-                                        toggled: val.toggled
-                                        
-                                    }).catch((error) => {
-                                        console.log('Connection Lost');
-                                    })
+                                            }
+                                        })
+                                        console.log(val.fullname + " toggled " + val.toggled);
+                                        dbRef.ref('/Markers/' + val.number).set({
+                                            lat: val.lat,
+                                            lng: val.lng,
+                                            fullname: val.fullname,
+                                            mobile: val.number,
+                                            locality: val.locality,
+                                            state: "Emergency",
+                                            details: "ELS Generated",
+                                            toggled: val.toggled,
+                                            message: "Resident Location has been inactive for 5 Minutes"
+
+                                        }).catch((error) => {
+                                            console.log('Connection Lost');
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -248,6 +330,15 @@ function Dashboard() {
 
             // Main algorithm --------------------------------------------------------------------------------------------
         }, MINUTE_MS);
+
+
+        dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                Object.values(snapshot.val()).map((val) => {
+                    setLocality(val.barangay)
+                })
+            }
+        })
 
         return () => clearInterval(interval);
     }, [])
@@ -284,12 +375,36 @@ function Dashboard() {
             onClick={toggleDrawer(anchor, false)}
             onKeyDown={toggleDrawer(anchor, false)}
         >
-            {anchor === 'left' ? (
-                //left panel
-                <Typography>left</Typography>
-            ) : (
-                //right panel
-                <Typography>right</Typography>
+            {anchor === 'left' && (
+                <div>
+                    <div className={classes.toolbar} />
+                    <Divider />
+                    <List>
+                        {/* {['Reports', 'Archive', 'Administrators'].map((text, index) => ( */}
+                        <ListItem button key="Reports" onClick={scrollToReports}>
+                            <ListItemIcon><AssignmentRoundedIcon /></ListItemIcon>
+                            <ListItemText primary="Reports" />
+                        </ListItem>
+
+                        <ListItem button key="Administrator">
+                            <ListItemIcon><PeopleAltRoundedIcon /></ListItemIcon>
+                            <ListItemText primary="Administrators" />
+                        </ListItem>
+                        <ListItem button key="Announcements">
+                            <ListItemIcon><AnnouncementRoundedIcon /></ListItemIcon>
+                            <ListItemText primary="Announcements" />
+                        </ListItem>
+                    </List>
+                    <List className={classes.bottomPush}>
+                        {/* {['Reports', 'Archive', 'Administrators'].map((text, index) => ( */}
+                        <ListItem button key="Archive">
+                            <ListItemIcon><ArchiveRoundedIcon /></ListItemIcon>
+                            <ListItemText primary="Archive" />
+                        </ListItem>
+                    </List>
+                </div>
+
+
             )}
         </div>
     );
@@ -332,10 +447,11 @@ function Dashboard() {
     }).catch((error) => {
     })
     // Generate Center Location ######
+
     const [avatar, setAvatar] = useState('?')
 
     currentUser.email && dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((snapshot) => {
-        if (snapshot.exists()){
+        if (snapshot.exists()) {
             Object.values(snapshot.val()).map((val) => {
                 setAvatar(val.firstname.charAt(0).toUpperCase())
             })
@@ -399,11 +515,18 @@ function Dashboard() {
     }
     const fixedHeightMap = clsx(classes.paper, classes.fixedHeightMap);
     const fixedHeightRes = clsx(classes.paper, classes.fixedHeightRes);
+
+    const { data, isLoading, errorMessage } = useOpenWeather({
+        key: process.env.REACT_APP_OPENWEATHER_KEY,
+        lat: lat,
+        lon: lng,
+        lang: 'en',
+        unit: 'metric', // values are (metric, standard, imperial)
+    });
+
+
     return (
-        <div>
-
-
-
+        <div >
             {/* SnackBar ##################### */}
             <Snackbar open={snack} autoHideDuration={4000} onClose={handleSnackClose}>
                 <Alert onClose={handleSnackClose} severity={severity}>
@@ -412,141 +535,172 @@ function Dashboard() {
             </Snackbar>
             {/* SnackBar ##################### */}
 
+            {/* Main ##################### */}
             <div className={classes.root}>
                 <CssBaseline />
-                <AppBar position="absolute" style={{backgroundColor: '#eceff1'}} elevation='0' >
+
+                <AppBar position="absolute" color="transparent" elevation={0} >
                     <Container>
-                    <Toolbar>
-                        <IconButton
-                            edge="start"
-                            className={classes.menuButton}
-                            color="inherit"
-                            aria-label="open drawer"
-                            onClick={toggleDrawer('left', true)}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography className={classes.title} variant="h6" noWrap>
-                            ELS
-                        </Typography>
-                        
-                        <div className={classes.grow} />
-                        <div className={classes.search} >
-                            <Button
-                                onClick={search}
-                                className={classes.searchIcon}
-                                style={{ borderRadius: '5px 0px 0px 5px', minWidth: '40px' }}
+                        <Toolbar>
+                            <IconButton
+                                edge="start"
+                                className={classes.menuButton}
+                                color="inherit"
+                                aria-label="open drawer"
+                                onClick={toggleDrawer('left', true)}
                             >
-                                <SearchIcon />
-                            </Button>
+                                <MenuIcon />
+                            </IconButton>
+                            <Typography className={classes.title} variant="h6" noWrap>
+                                ELS
+                            </Typography>
 
-                            <InputBase
-                                placeholder={searchPlaceholder}
-                                classes={{
-                                    root: classes.inputRoot,
-                                    input: classes.inputInput,
-                                }}
-                                inputProps={{ 'aria-label': 'search' }}
-                                onChange={handleSearchterm}
-                                value={searchTerm}
-                            />
 
-                            <FormControl className={classes.margin} >
-                                <Select
-
-                                    value={searchBy}
-                                    onChange={handleSearchBy}
-                                    input={<BootstrapInput />}
-                                    defaultValue={searchBy}
+                            <div className={classes.search} >
+                                <Button
+                                    onClick={search}
+                                    className={classes.searchIcon}
+                                    style={{ borderRadius: '5px 0px 0px 5px', minWidth: '40px' }}
                                 >
-                                    <MenuItem value={'fullname'}>Full Name</MenuItem>
-                                    <MenuItem value={'firstname'}>First Name</MenuItem>
-                                    <MenuItem value={'lastname'}>Last Name</MenuItem>
-                                    <MenuItem value={'number'}>Mobile</MenuItem>
-                                </Select>
-                            </FormControl>
+                                    <SearchIcon />
+                                </Button>
 
-                        </div>
+                                <InputBase
+                                    placeholder={searchPlaceholder}
+                                    classes={{
+                                        root: classes.inputRoot,
+                                        input: classes.inputInput,
+                                    }}
+                                    inputProps={{ 'aria-label': 'search' }}
+                                    onChange={handleSearchterm}
+                                    value={searchTerm}
+                                />
 
+                                <FormControl className={classes.margin} >
+                                    <Select
 
-                        <Typography>{adminName}</Typography>
-                        <IconButton
-                            edge="end"
-                            aria-label="account of current user"
-                            aria-haspopup="true"
-                            color="inherit"
-                            onClick={handleClick}
-                            aria-controls="account-menu"
-                            aria-haspopup="true"
-                        >
-                            <Avatar style={{backgroundColor: '#fcbc20', color: '#222222'}}>{avatar}</Avatar>
-                        </IconButton>
-                        <StyledMenu
-                            id="account-menu"
-                            anchorEl={anchorEl}
-                            keepMounted
-                            open={Boolean(anchorEl)}
-                            onClose={handleClose}
-                        >
-                            <StyledMenuItem>
-                                <ListItemIcon>
-                                    <EditIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText primary="Edit Account" />
-                            </StyledMenuItem>
-                            <StyledMenuItem>
-                                <ListItemIcon>
-                                    <LockIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText primary="Change Password" />
-                            </StyledMenuItem>
-                            <StyledMenuItem button key='logout' onClick={handleLogout}>
-                                <ListItemIcon>
-                                    <ExitToAppIcon color='error' fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText primary="Logout" />
-                            </StyledMenuItem>
-                        </StyledMenu>
-                        <div>
-                            {['left', 'right', 'top', 'bottom'].map((anchor) => (
-                                <React.Fragment key={anchor}>
+                                        value={searchBy}
+                                        onChange={handleSearchBy}
+                                        input={<BootstrapInput />}
+                                        defaultValue={searchBy}
+                                    >
+                                        <MenuItem value={'fullname'}>Full Name</MenuItem>
+                                        <MenuItem value={'firstname'}>First Name</MenuItem>
+                                        <MenuItem value={'lastname'}>Last Name</MenuItem>
+                                        <MenuItem value={'number'}>Mobile</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                            </div>
+                            <div className={classes.grow} />
+
+                            <Typography>{adminName}</Typography>
+                            <IconButton
+                                edge="end"
+                                aria-label="account of current user"
+                                aria-haspopup="true"
+                                color="inherit"
+                                onClick={handleClick}
+                                aria-controls="account-menu"
+                                aria-haspopup="true"
+                            >
+                                <Avatar style={{ backgroundColor: '#fcbc20', color: '#222222' }}>{avatar}</Avatar>
+                            </IconButton>
+                            <StyledMenu
+                                id="account-menu"
+                                anchorEl={anchorEl}
+                                keepMounted
+                                open={Boolean(anchorEl)}
+                                onClose={handleClose}
+                            >
+                                <StyledMenuItem>
+                                    <ListItemIcon>
+                                        <EditIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Edit Account" />
+                                </StyledMenuItem>
+                                <StyledMenuItem>
+                                    <ListItemIcon>
+                                        <LockIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Change Password" />
+                                </StyledMenuItem>
+                                <StyledMenuItem button key='logout' onClick={handleLogout}>
+                                    <ListItemIcon>
+                                        <ExitToAppIcon color='error' fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Logout" />
+                                </StyledMenuItem>
+                            </StyledMenu>
+                            <div>
+                                <React.Fragment key="left">
                                     <SwipeableDrawer
-                                        anchor={anchor}
-                                        open={state[anchor]}
-                                        onClose={toggleDrawer(anchor, false)}
-                                        onOpen={toggleDrawer(anchor, true)}
+                                        anchor="left"
+                                        open={state["left"]}
+                                        onClose={toggleDrawer("left", false)}
+                                        onOpen={toggleDrawer("left", true)}
                                         disableBackdropTransition={!iOS}
                                         disableDiscovery={iOS}
                                     >
-                                        {list(anchor)}
+                                        {list("left")}
                                     </SwipeableDrawer>
                                 </React.Fragment>
-                            ))}
-                        </div>
-                    </Toolbar>
+                            </div>
+                        </Toolbar>
                     </Container>
                 </AppBar>
-            
 
-            <main className={classes.content} style={{ backgroundColor: '#eceff1' }}>
-                <div className={classes.appBarSpacer} />
-                <Container className={classes.container}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} md={8} lg={9}>
-                            <Paper className={fixedHeightMap} elevation='5' style={{borderRadius: '20px'}}>
-                                <LiveMap center={center} />
-                            </Paper>
+                <main className={classes.content} style={{ flexGrow: '1' }}>
+                    <div className={classes.appBarSpacer} />
+                    <Container className={classes.containerAlt} style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
+                        <Grid container spacing={2} >
+                            <Grid item xs={12} md={8} lg={9}>
+                                <Paper className={fixedHeightMap} elevation={1} style={{ backgroundColor: 'rgba(0,0,0,0)', borderRadius: '20px' }}>
+                                    <LiveMap center={center} />
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12} md={4} lg={3} >
+                                <Paper className={fixedHeightRes} elevation={1} style={{ backgroundColor: 'rgba(0,0,0,0)', borderRadius: '20px 20px 20px 20px' }}>
+                                    <Residents lat={lat} lng={lng} />
+                                </Paper>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12} md={4} lg={3}>
-                            <Paper className={fixedHeightRes} elevation='5' style={{borderRadius: '20px'}}>
-                                <Residents lat={lat} lng={lng} />
-                            </Paper>
+                    </Container>
+                    <Container className={classes.container} style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} md={8} lg={8}>
+                                <div ref={reportsRef} >
+                                    <Reports />
+                                </div>
+                            </Grid>
+                            <Grid item xs={12} md={4} lg={4}>
+                                <div style={{
+                                    backdropFilter: 'blur(50px)',
+                                    backgroundColor: 'rgba(255,255,255,0.1)',
+                                    boxShadow: '0px 0px 2px #222',
+                                }}>
+                                    <ReactWeather
+                                        style={{ borderRadius: '20px', }}
+                                        theme={weatherStyle}
+                                        isLoading={isLoading}
+                                        errorMessage={errorMessage}
+                                        data={data}
+                                        lang="en"
+                                        locationLabel={locality && locality.toLowerCase().charAt(0).toUpperCase() + locality.toLowerCase().slice(1)}
+                                        unitsLabels={{ temperature: 'C', windSpeed: 'Km/h' }}
+                                        showForecast
+                                    /></div>
+                            </Grid>
+
                         </Grid>
-                    </Grid>
-                </Container>
-            </main>
+
+                    </Container>
+                </main>
 
             </div>
+            {/* Main ##################### */}
+
+            {/* Dialog ##################### */}
             <Dialog
                 fullWidth
                 open={openResultDialog}
@@ -582,18 +736,18 @@ function Dashboard() {
                                     <Typography variant="caption" component="p">
                                         Sex: {val.sex}
                                         <br />
-                                            Age: {val.age}
+                                        Age: {val.age}
                                         <br />
-                                            Height: {val.height}
+                                        Height: {val.height}
                                         <br />
-                                            Weight: {val.weight}
+                                        Weight: {val.weight}
                                         <br />
-                                            Blood Type: {val.bloodtype}
+                                        Blood Type: {val.bloodtype}
                                     </Typography>
                                     <br />
                                     <Typography variant="body2">
                                         Medical Conditions:
-                                        </Typography>
+                                    </Typography>
                                     <Typography variant="caption">
                                         {val.conditions}
                                     </Typography>
@@ -601,7 +755,7 @@ function Dashboard() {
                                     <br />
                                     <Typography variant="body2">
                                         Allergies:
-                                        </Typography>
+                                    </Typography>
                                     <Typography variant="caption">
                                         {val.allergies}
                                     </Typography>
@@ -609,7 +763,7 @@ function Dashboard() {
                                     <br />
                                     <Typography variant="body2">
                                         Medical Notes:
-                                        </Typography>
+                                    </Typography>
                                     <Typography variant="caption">
                                         {val.mednotes}
                                     </Typography>
@@ -619,7 +773,7 @@ function Dashboard() {
                     )}
                 </DialogContent>
             </Dialog>
-
+            {/* Dialog ##################### */}
 
         </div>
     )

@@ -11,11 +11,9 @@ import Dashboard from './components/Dashboard'
 import ForgotPassword from './components/ForgotPassword'
 
 const theme = createMuiTheme({
+
   palette: {
     primary: amber,
-    background: {
-      default: "#f1f5f0"
-    }
 
   },
   typography: {

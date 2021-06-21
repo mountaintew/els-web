@@ -127,7 +127,7 @@ export default function Reports() {
       (response) => {
         const address = response.results[0].formatted_address;
         setAddress(address)
-        dbRef.ref('/Users/' + val.mobile).on('value', (snapshot) => {
+        dbRef.ref('/Users/' + val.mobile + '/info').on('value', (snapshot) => {
           if (snapshot.exists()) {
             setInfo([snapshot.val()])
             setEmergencyInfo(val)

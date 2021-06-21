@@ -171,8 +171,6 @@ function LiveMap(props) {
         setSnack(false);
     };
 
-
-
     let city;
     Geocode.setApiKey(process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
     Geocode.setLanguage("en");
@@ -209,70 +207,7 @@ function LiveMap(props) {
     };
 
     useEffect(() => {
-        if (appState === "Disconnected") {
-            const interval = setInterval(() => {
-                // Main algorithm --------------------------------------------------------------------------------------------
-                // (1) Get all users with timestamp
-                // (2) Get the difference of the current timestamp and the user's last timestamp
-                // (3) Convert the difference into minutes
-                // (4) If the minutes is greater than 5 (minutes) and the location is toggled,
-                // (5) declare it as an emergency, send the coordinates as emergency markers and change user's state to emergency
 
-                // const checkOnlineStatus = async () => {
-                //     try {
-                //         const online = await fetch("/1pixel.png");
-                //         return online.status >= 200 && online.status < 300; // either true or false
-                //     } catch (err) {
-                //         return false; // definitely offline
-                //     }
-                // };
-
-                // setInterval(async () => {
-                //     const result = await checkOnlineStatus();
-                //     const statusDisplay = document.getElementById("status");
-                //     statusDisplay.textContent = result ? "Online" : "OFFline";
-                // }, 3000); // probably too often, try 30000 for every 30 seconds
-
-
-                dbRef.ref('/Users').orderByChild('timestamp').on('value', (snapshot) => { // (1)
-                    if (snapshot.exists()) {
-                        Object.values(snapshot.val()).map((val) => {
-                            if (val.timestamp !== undefined) {
-                                var difference = new Date().getTime() - val.timestamp // (2)
-                                var identifier = difference / 60000 // (3)
-                                if (identifier > 5) { // (4)
-                                    if (val.toggled) {
-                                        // (5)
-                                        dbRef.ref('/Users/' + val.number + '/state').set('Emergency').catch((error) => {
-                                            console.log('Connection Lost');
-                                        })
-
-                                        dbRef.ref('/Markers/' + val.number).set({
-                                            lat: val.lat,
-                                            lng: val.lng,
-                                            fullname: val.fullname,
-                                            mobile: val.number,
-                                            locality: val.locality,
-                                            state: "Emergency",
-                                            details: "ELS Generated",
-                                            toggled: val.toggled,
-                                            message: "Resident Location has been inactive for 5 Minutes"
-
-                                        }).catch((error) => {
-                                            console.log('Connection Lost');
-                                        })
-                                    }
-                                }
-                            }
-                        })
-                    }
-                })
-
-
-                // Main algorithm --------------------------------------------------------------------------------------------
-            }, 60000);
-            return () => clearInterval(interval);
-        }
     }, [appState])
 
 
@@ -383,7 +318,7 @@ function LiveMap(props) {
 
     useEffect(() => {
         if (selectedMarker) {
-            dbRef.ref('/Users/' + selectedMarker.id).get().then((snapshot) => {
+            dbRef.ref('/Users/' + selectedMarker.id + '/info').get().then((snapshot) => {
                 if (snapshot.exists) {
                     setResident(snapshot.val())
                 }
@@ -445,7 +380,7 @@ function LiveMap(props) {
                 setSeverity('error')
             } else {
                 // Data saved successfully
-                dbRef.ref('/Users/' + selectedMarker.id + '/message').set(data.message, (error) => {
+                dbRef.ref('/Markers/' + selectedMarker.id + '/reportedOn').set(Date.now(), (error) => {
                     if (error) {
                         // The write failed...
                         setSnack(true)
@@ -453,26 +388,29 @@ function LiveMap(props) {
                         setSeverity('error')
                     } else {
                         // Data saved successfully
-                        dbRef.ref('/Markers/' + selectedMarker.id + '/reportedOn').set(Date.now(), (error) => {
-                            if (error) {
-                                // The write failed...
-                                setSnack(true)
-                                setSnackMessage('Report Failed.')
-                                setSeverity('error')
-                            } else {
-                                // Data saved successfully
-                                dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((ss) => {
-                                    if (ss.exists()) {
-                                        let fullname
-                                        Object.values(ss.val()).map((val) => {
-                                            fullname = val.firstname + " " + val.lastname
-                                        })
-                                        dbRef.ref('/Markers/' + selectedMarker.id + '/reportedBy').set(fullname, (error) => {
+                        dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((ss) => {
+                            if (ss.exists()) {
+                                let fullname, firstname, lastname;
+                                Object.values(ss.val()).map((val) => {
+                                    fullname = val.firstname + " " + val.lastname
+                                    firstname = val.firstname
+                                    lastname = val.lastname
+                                })
+                                dbRef.ref('/Markers/' + selectedMarker.id + '/reportedBy').set(fullname, (error) => {
+                                    if (error) {
+                                        setSnack(true)
+                                        setSnackMessage('Report Failed.')
+                                        setSeverity('error')
+                                    } else {
+                                        // Data saved successfully
+                                        dbRef.ref('/Users/' + selectedMarker.id + '/services/message').set(data.message + "@" + firstname.charAt(0).toUpperCase() + ". " + lastname, (error) => {
                                             if (error) {
+                                                // The write failed...
                                                 setSnack(true)
                                                 setSnackMessage('Report Failed.')
                                                 setSeverity('error')
                                             } else {
+                                                // Data saved successfully
                                                 handleRespondClose()
                                                 setSnack(true)
                                                 setSnackMessage('Report Successful')
@@ -485,6 +423,7 @@ function LiveMap(props) {
                         })
                     }
                 })
+
             }
         })
     }

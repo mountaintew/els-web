@@ -26,6 +26,7 @@ import AssignmentRoundedIcon from '@material-ui/icons/AssignmentRounded';
 import PeopleAltRoundedIcon from '@material-ui/icons/PeopleAltRounded';
 import ReactWeather, { useOpenWeather } from 'react-open-weather';
 import AnnouncementRoundedIcon from '@material-ui/icons/AnnouncementRounded';
+import DirectionsRunRoundedIcon from '@material-ui/icons/DirectionsRunRounded';
 import zIndex from '@material-ui/core/styles/zIndex';
 
 
@@ -223,7 +224,7 @@ function Dashboard() {
     const history = useHistory()
     const iOS = process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent); // swipeable on ios devices
     const dbRef = firebase.database();
-    const MINUTE_MS = 1000;
+    const MINUTE_MS = 10000;
     const [adminName, setAdminName] = useState('')
 
     const [severity, setSeverity] = useState('error')
@@ -282,38 +283,35 @@ function Dashboard() {
             //     statusDisplay.textContent = result ? "Online" : "OFFline";
             // }, 3000); // probably too often, try 30000 for every 30 seconds
 
-
-            dbRef.ref('/Users').orderByChild('timestamp').on('value', (snapshot) => { // (1)
+            dbRef.ref('/Users').orderByChild('/info/timestamp').once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    Object.values(snapshot.val()).map((val) => {
-                        if (val.timestamp !== undefined) {
-                            if (val.state === "Emergency") {
-
-                            } else {
-                                var difference = new Date().getTime() - val.timestamp // (2)
+                    Object.values(snapshot.val()).map((v) => {
+                        if (v.info.timestamp !== undefined) {
+                            if (v.info.state !== "Emergency") {
+                                var difference = new Date().getTime() - v.info.timestamp // (2)
                                 var identifier = difference / 60000 // (3)
                                 if (identifier > 5) { // (4)
-                                    if (val.toggled) {
+                                    if (v.info.toggled) {
                                         // (5)
-                                        dbRef.ref('/Users/' + val.number + '/state').set('Emergency').catch((error) => {
+                                        dbRef.ref('/Users/' + v.info.number + '/info/state').set('Emergency').catch((error) => {
                                             console.log('Connection Lost');
                                         })
-                                        dbRef.ref('/Users/' + val.number + '/toggled').set(false).catch((error) => {
+                                        dbRef.ref('/Users/' + v.info.number + '/info/toggled').set(false).catch((error) => {
                                             console.log('Connection Lost');
                                             if (error) {
 
                                             }
                                         })
-                                        console.log(val.fullname + " toggled " + val.toggled);
-                                        dbRef.ref('/Markers/' + val.number).set({
-                                            lat: val.lat,
-                                            lng: val.lng,
-                                            fullname: val.fullname,
-                                            mobile: val.number,
-                                            locality: val.locality,
+                                        console.log(v.info.fullname + " toggled " + v.info.toggled);
+                                        dbRef.ref('/Markers/' + v.info.number).set({
+                                            lat: v.info.lat,
+                                            lng: v.info.lng,
+                                            fullname: v.info.fullname,
+                                            mobile: v.info.number,
+                                            locality: v.info.locality,
                                             state: "Emergency",
                                             details: "ELS Generated",
-                                            toggled: val.toggled,
+                                            toggled: v.info.toggled,
                                             message: "Resident Location has been inactive for 5 Minutes"
 
                                         }).catch((error) => {
@@ -324,6 +322,8 @@ function Dashboard() {
                             }
                         }
                     })
+                } else {
+                    console.log('not exist');
                 }
             })
 
@@ -389,6 +389,10 @@ function Dashboard() {
                         <ListItem button key="Administrator">
                             <ListItemIcon><PeopleAltRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Administrators" />
+                        </ListItem>
+                        <ListItem button key="Response Team">
+                            <ListItemIcon><DirectionsRunRoundedIcon /></ListItemIcon>
+                            <ListItemText primary="Response Team" />
                         </ListItem>
                         <ListItem button key="Announcements">
                             <ListItemIcon><AnnouncementRoundedIcon /></ListItemIcon>
@@ -501,15 +505,16 @@ function Dashboard() {
 
     const search = () => {
         searchTerm &&
-            dbRef.ref('/Users').orderByChild(searchBy).equalTo(searchTerm).once('value').then((snapshot) => {
+            dbRef.ref('/Users').orderByChild('info/' + searchBy).equalTo(searchTerm).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    setSearchResult(Object.values(snapshot.val()))
+
+                    setSearchResult([Object.values(snapshot.val())[0].info])
                     setResultDialog(true)
                 } else {
                     setSearchResult(null)
                     setSnack(true)
                     setSeverity('error')
-                    setSnackMessage('No data found.')
+                    setSnackMessage('Resident not found.')
                 }
             })
     }
@@ -539,7 +544,7 @@ function Dashboard() {
             <div className={classes.root}>
                 <CssBaseline />
 
-                <AppBar position="absolute" color="transparent" elevation={0} >
+                <AppBar position="absolute" style={{backgroundColor: 'rgba(207, 216, 220, 1)'}} elevation={0} >
                     <Container>
                         <Toolbar>
                             <IconButton

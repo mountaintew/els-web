@@ -10,7 +10,7 @@ export default [
   { message: 'Ambulance is right around please stand by', group: 'General' },
 
   { message: 'Please dont panic. Know the location of the nearest fire exits in your area.', group: 'Fire' },
-  { message: 'Please leave the premises at once and wait for emergency units/firefighter to arrive.', group: 'Fire' },
+  { message: 'Please leave the premises at once and wait for the firefighters to arrive.', group: 'Fire' },
   { message: 'Firefighters are on their way, seek directly head towards safe location and wait for further instructions.', group: 'Fire' },
   { message: 'FIRE SAFETY ALERT: Fast moving fire in your area move out of the building or property now!', group: 'Fire' },
 

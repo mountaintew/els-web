@@ -248,8 +248,13 @@ export default function Residents(props) {
                     </Paper>
                 </Grid> */}
 
-
-                <Grid item xs={6} className={classes.glass}>
+                <Grid
+                container
+                spacing={0} 
+                className={classes.glass}
+                style={{ borderRadius: '0px 0px 20px 20px' }}
+                >
+                <Grid item xs={6} >
                     <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
@@ -260,7 +265,7 @@ export default function Residents(props) {
                         <Typography variant="caption">Flood Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} className={classes.glass}>
+                <Grid item xs={6} >
                     <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
@@ -271,7 +276,7 @@ export default function Residents(props) {
                         <Typography variant="caption">Fire Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} className={classes.glass}>
+                <Grid item xs={6} >
                     <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
@@ -282,7 +287,7 @@ export default function Residents(props) {
                         <Typography variant="caption">Accidents</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} className={classes.glass}>
+                <Grid item xs={6} >
                     <Paper className={classes.paperdata}>
                         <Box>
                             <IconButton size='small'>
@@ -294,7 +299,7 @@ export default function Residents(props) {
                     </Paper>
 
                 </Grid>
-                <Grid item xs={6} className={classes.glass} style={{ borderRadius: '0px 0px 0px 20px' }}>
+                <Grid item xs={6} >
                     <Paper className={classes.paperdata} style={{ borderRadius: '0px 0px 0px 20px' }}>
                         <Box>
                             <IconButton size='small'>
@@ -305,7 +310,7 @@ export default function Residents(props) {
                         <Typography variant="caption">Medical Related</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={6} className={classes.glass} style={{ borderRadius: '0px 0px 20px 0px' }}>
+                <Grid item xs={6} >
                     <Paper style={{ borderRadius: '0px 0px 20px 0px' }} className={classes.paperdata}  >
                         <Box>
                             <IconButton size='small'>
@@ -316,7 +321,7 @@ export default function Residents(props) {
                         <Typography variant="caption">Others</Typography>
                     </Paper>
                 </Grid>
-
+                </Grid>
             </Grid>
         </div>
     )

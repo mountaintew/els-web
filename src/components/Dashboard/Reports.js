@@ -82,7 +82,6 @@ export default function Reports() {
                   }
                 }
               }
-
               dbRef.ref('/Markers').orderByChild('locality').equalTo(city).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                   const x = []
@@ -93,7 +92,7 @@ export default function Reports() {
                   })
                   setTableData(x)
                 } else {
-                  if (city === "Lungsod Quezon") {
+                  if (city === "Quezon City") {
                     dbRef.ref('/Markers').orderByChild('locality').equalTo("Lungsod Quezon").on('value', (snapshot) => {
                       if (snapshot.exists()) {
                         const x = []

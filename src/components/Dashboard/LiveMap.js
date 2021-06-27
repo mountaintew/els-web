@@ -9,7 +9,7 @@ import alerton from './Sfx/alertsound.wav'
 import alertoff from './Sfx/alertoff.wav'
 import clsx from 'clsx';
 import anim from './Sfx/anim.svg'
-import { IconButton, Accordion, AccordionDetails, AccordionSummary, Avatar, Button, Card, CardActionArea, CardActions, CardContent, Container, Grid, SwipeableDrawer, Typography, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Paper, TextField, Snackbar } from '@material-ui/core';
+import { Slider, Select, MenuItem, IconButton, Accordion, AccordionDetails, AccordionSummary, Avatar, Button, Card, CardActionArea, CardActions, CardContent, Container, Grid, SwipeableDrawer, Typography, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Paper, TextField, Snackbar } from '@material-ui/core';
 import { fade, makeStyles, withStyles } from '@material-ui/core/styles';
 import { ExpandMore, TrafficIcon } from '@material-ui/icons';
 import WarningRoundedIcon from '@material-ui/icons/WarningRounded';
@@ -164,6 +164,8 @@ function LiveMap(props) {
     const [severity, setSeverity] = useState('error')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
+    const [barangayId, setBarangayId] = useState()
+
     const handleSnackClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -288,6 +290,7 @@ function LiveMap(props) {
 
                 Object.values(snapshot.val()).map((val) => {
                     scope = val.barangay + "-" + val.municipality
+                    setBarangayId(val.barangay_id)
                 })
                 var connectedRef = dbRef.ref(".info/connected");
                 var presenceRef = dbRef.ref("/WebStates/" + scope);
@@ -372,61 +375,96 @@ function LiveMap(props) {
     });
 
     const onSubmit = (data) => {
-        dbRef.ref('/Markers/' + selectedMarker.id + '/state').set('Reported', (error) => {
-            if (error) {
-                // The write failed...
-                setSnack(true)
-                setSnackMessage('Report Failed.')
-                setSeverity('error')
-            } else {
-                // Data saved successfully
-                dbRef.ref('/Markers/' + selectedMarker.id + '/reportedOn').set(Date.now(), (error) => {
-                    if (error) {
-                        // The write failed...
-                        setSnack(true)
-                        setSnackMessage('Report Failed.')
-                        setSeverity('error')
-                    } else {
-                        // Data saved successfully
-                        dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((ss) => {
-                            if (ss.exists()) {
-                                let fullname, firstname, lastname;
-                                Object.values(ss.val()).map((val) => {
-                                    fullname = val.firstname + " " + val.lastname
-                                    firstname = val.firstname
-                                    lastname = val.lastname
-                                })
-                                dbRef.ref('/Markers/' + selectedMarker.id + '/reportedBy').set(fullname, (error) => {
-                                    if (error) {
-                                        setSnack(true)
-                                        setSnackMessage('Report Failed.')
-                                        setSeverity('error')
-                                    } else {
-                                        // Data saved successfully
-                                        dbRef.ref('/Users/' + selectedMarker.id + '/services/message').set(data.message + "@" + firstname.charAt(0).toUpperCase() + ". " + lastname, (error) => {
-                                            if (error) {
-                                                // The write failed...
-                                                setSnack(true)
-                                                setSnackMessage('Report Failed.')
-                                                setSeverity('error')
-                                            } else {
-                                                // Data saved successfully
-                                                handleRespondClose()
-                                                setSnack(true)
-                                                setSnackMessage('Report Successful')
-                                                setSeverity('success')
-                                            }
-                                        })
-                                    }
-                                })
-                            }
-                        })
-                    }
-                })
 
+
+        dbRef.ref('/Markers').orderByChild('mobile').equalTo(selectedMarker.id).once('value').then((snap) => {
+            if (snap.exists()) {
+                let db_fname, db_mobile, db_togg, db_details, db_message, db_lat, db_lng, db_locl, db_ts, timenow
+
+                Object.values(snap.val()).map((v) => {
+                    db_fname = v.fullname
+                    db_mobile = v.mobile
+                    db_togg = v.toggled
+                    db_details = v.details
+                    db_message = v.message
+                    db_lat = v.lat
+                    db_lng = v.lng
+                    db_locl = v.locality
+                    db_ts = v.timestamp
+                })
+                timenow = Date.now()
+                
+                
+                try {
+                    dbRef.ref('/Markers/' + selectedMarker.id).set({
+                        "fullname": db_fname,
+                        "details": db_details,
+                        "lat": db_lat,
+                        "lng": db_lng,
+                        "locality": db_locl,
+                        "message": db_message,
+                        "mobile": db_mobile,
+                        "toggled": db_togg,
+                        "state": "Reported",
+                        "barangay_id": barangayId,
+                        "dept": watch('dept'),
+                        "reportedOn": timenow,
+                        "timestamp": db_ts,
+                        "triage" : watch('triage')
+                    }, (err) => {
+                        if (err) {
+                            setSnack(true)
+                            setSnackMessage('Report Failed.')
+                            setSeverity('error')
+                        } else {
+                            dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((ss) => {
+                                if (ss.exists()) {
+                                    let fullname, firstname, lastname;
+                                    Object.values(ss.val()).map((val) => {
+                                        fullname = val.firstname + " " + val.lastname
+                                        firstname = val.firstname
+                                        lastname = val.lastname
+                                    })
+                                    dbRef.ref('/Markers/' + selectedMarker.id + '/reportedBy').set(fullname, (error) => {
+                                        if (error) {
+                                            setSnack(true)
+                                            setSnackMessage('Report Failed.')
+                                            setSeverity('error')
+                                        } else {
+                                            // Data saved successfully
+                                            dbRef.ref('/Users/' + selectedMarker.id + '/services').set({
+                                                "message": data.message,
+                                                "reporter": firstname.charAt(0).toUpperCase() + ". " + lastname,
+                                            }, (error) => {
+                                                if (error) {
+                                                    // The write failed...
+                                                    setSnack(true)
+                                                    setSnackMessage('Report Failed.')
+                                                    setSeverity('error')
+                                                } else {
+                                                    // Data saved successfully
+                                                    handleRespondClose()
+                                                    setSnack(true)
+                                                    setSnackMessage('Report Successful')
+                                                    setSeverity('success')
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                    })    
+                } catch (error) {
+                    setSnack(true)
+                    setSeverity('warning')
+                    setSnackMessage('Report cannot processed right now.')
+                }                
             }
         })
     }
+
+
 
     return (
         <div style={{
@@ -589,41 +627,93 @@ function LiveMap(props) {
                                 direction="row"
                                 spacing={2}
                             >
-                                <Grid item xs={6} >
-                                    <Typography variant="body1" style={{ fontWeight: 'bold' }}>{response.firstname + " " + response.lastname + " "}
-                                    </Typography>
-                                    <Typography variant="caption" color="textSecondary">{response.number}</Typography>
-
+                                <Grid item xs={4} >
+                                    <Typography variant="caption" color="textSecondary" gutterBottom>Resident:</Typography>
+                                    <Typography variant="body2" gutterBottom style={{ fontWeight: 'bold' }}>{response.firstname + " " + response.lastname + " "}</Typography>
                                 </Grid>
                                 <Grid
                                     item
-                                    xs={6}
-                                    style={{ textAlign: 'right', }}
+                                    xs={4}
                                 >
-                                    <Typography variant="caption" color="textSecondary">Sent On</Typography>
-                                    <Typography variant="subtitle2">{response.timestamp && new Date(response.timestamp).toLocaleString()}</Typography>
+                                    <Typography variant="caption" color="textSecondary" gutterBottom>Sent On:</Typography>
+                                    <Typography variant="body2" style={{ fontWeight: 'bold' }}>{response.timestamp && new Date(response.timestamp).toLocaleString()}</Typography>
                                 </Grid>
                                 <Grid
                                     item
-                                    xs={6}
+                                    xs={4}
                                 >
-                                    <Typography variant="caption" color="textSecondary">Details:</Typography> <br />
-                                    <Typography variant="subtitle1">{selectedMarker && selectedMarker.details}</Typography>
+                                    <Typography variant="caption" color="textSecondary" gutterBottom>Details:</Typography>
+                                    <Typography variant="body2" style={{ fontWeight: 'bold' }}>{selectedMarker && selectedMarker.details}</Typography>
 
 
                                 </Grid>
                                 <Grid
                                     item
                                     xs={6}
-                                    style={{ textAlign: 'end' }}
+                                    style={{ textAlign: 'start' }}
                                 >
-                                    <Typography variant="caption" color="textSecondary">Reporting to:</Typography>
-                                    <Typography variant="caption">{ }</Typography>
+                                    <Typography variant="caption" color="textSecondary">Reporting to:</Typography> <br />
+
+                                    <Select
+                                        labelId="report-dept"
+                                        id="report-dept"
+                                        defaultValue=""
+                                        displayEmpty
+                                        variant="outlined"
+                                        {...register("dept", { required: true })}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <MenuItem value="">
+                                            <em>Select Department</em>
+                                        </MenuItem>
+                                        <MenuItem value="bsf_dept">
+                                            Barangay Security Force
+                                        </MenuItem>
+                                        <MenuItem value="fire_dept">
+                                            Fire Department
+                                        </MenuItem>
+                                        <MenuItem value="health_dept">
+                                            Health Department
+                                        </MenuItem>
+                                        <MenuItem value="rrd_dept">
+                                            Risk Reduction Department
+                                        </MenuItem>
+                                    </Select>
+                                </Grid>
+                                <Grid
+                                    item
+                                    xs={6}
+                                    style={{ textAlign: 'start' }}
+                                >
+                                    <Typography variant="caption" color="textSecondary">Triage:</Typography> <br />
+
+                                    <Select
+                                        labelId="report-triage"
+                                        id="report-triage"
+                                        defaultValue=""
+                                        displayEmpty
+                                        variant="outlined"
+                                        {...register("triage", { required: true })}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <MenuItem value="">
+                                            <em>Set Triage</em>
+                                        </MenuItem>
+                                        <MenuItem value="nurg" style={{ color: '#4CAF50' }}>
+                                            Non-Urgent
+                                        </MenuItem>
+                                        <MenuItem value="prio" style={{ color: '#FFC107' }}>
+                                            Priority
+                                        </MenuItem>
+                                        <MenuItem value="emer" style={{ color: '#E53935' }}>
+                                            Emergency
+                                        </MenuItem>
+                                    </Select>
                                 </Grid>
                                 <Grid
                                     item
                                     xs={12}>
-                                    <Typography variant="caption" color="textSecondary">Message:</Typography> <br />
+                                    <Typography variant="caption" color="textSecondary">Resident Message:</Typography> <br />
                                     <Typography variant="caption">{selectedMarker && selectedMarker.message}</Typography>
                                 </Grid>
 
@@ -636,10 +726,9 @@ function LiveMap(props) {
                                             freeSolo
                                             renderInput={(params) => <TextField
                                                 {...params}
-
                                                 style={{ fontFamily: 'Lato', fontWeight: 'lighter' }}
                                                 variant="outlined"
-                                                label="Send a Message"
+                                                label="Send a reply"
                                                 name="message"
                                                 id="message"
                                                 {...register('message',

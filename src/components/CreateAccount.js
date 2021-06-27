@@ -240,6 +240,12 @@ function CreateAccount() {
         }
     }
 
+    function randomString(length, chars) {
+        var result = '';
+        for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+        return result;
+    }
+    var rString = randomString(5, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') + "-" +  randomString(5, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
 
     async function handleFormSubmit(e) {
         e.preventDefault()
@@ -255,13 +261,20 @@ function CreateAccount() {
                     "region": watch('region'),
                     "province": watch('province'),
                     "municipality": watch('municipality'),
-                    "barangay": watch('barangay')
+                    "barangay": watch('barangay'),
+                    "barangay_id" : rString
                 }, (error) => {
                     if (error) {
                         alert('Error saving.')
                     } else {
-                        signup(watch('email'), watch('password'))
-                        history.push("/login")
+                        dbRef.ref('/Barangays/' + watch('barangay') + "/barangay_id").set(rString, (error) => {
+                            if (error) {
+                                alert('Error saving.')
+                            } else {
+                                signup(watch('email'), watch('password'))
+                                history.push("/login")
+                            }
+                        })
                     }
                 });
             } catch (error) {
@@ -297,7 +310,7 @@ function CreateAccount() {
                                 </Avatar>
                                 <Typography component="h1" variant="h5">
                                     Create Account
-                            </Typography>
+                                </Typography>
                                 <div className={classes.root}>
                                     <Stepper alternativeLabel activeStep={formStep} style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
                                         {steps.map((label) => (
@@ -396,7 +409,7 @@ function CreateAccount() {
                                                         fullWidth
                                                         label="First Name"
                                                         defaultValue={watch('firstname') ? watch('firstname') : ''}
-                                                        {...register('firstname', { required: true, pattern: /^[a-zA-Z]{2,30}$/ })}
+                                                        {...register('firstname', { required: true, pattern: /^[a-zA-ZñÑ]{2,30}$/ })}
                                                         error={errors.firstname}
                                                         helperText={errors.firstname && 'First Name is required.'}
                                                         InputProps={{ style: { textTransform: 'capitalize' } }}
@@ -413,7 +426,7 @@ function CreateAccount() {
                                                         fullWidth
                                                         label="Last Name"
                                                         defaultValue={watch('lastname') ? watch('lastname') : ''}
-                                                        {...register('lastname', { required: true, pattern: /^[a-zA-Z]{2,30}$/ })}
+                                                        {...register('lastname', { required: true, pattern: /^[a-zA-ZñÑ]{2,30}$/ })}
                                                         error={errors.lastname}
                                                         helperText={errors.lastname && 'Last Name is required.'}
 
@@ -557,14 +570,17 @@ function CreateAccount() {
                 </Box>
                 {
                     formStep < 1 ?
-                        <Box mt={1} className={classes.cardbg}>
-                            <Button variant="outlined" size="medium" fullWidth className={classes.link}>
-                                Already have an account?&nbsp;
+                        <div>
+                            <Box mt={1} className={classes.cardbg}>
+                                <Button variant="outlined" size="medium" fullWidth className={classes.link}>
+                                    Already have an account?&nbsp;
                                     <Link to="/login" variant="body2" align="center" className={classes.link}>
-                                    Login
+                                        Login
                                     </Link>
-                            </Button>
-                        </Box>
+                                </Button>
+                            </Box>
+                        </div>
+
                         : ''
                 }
 

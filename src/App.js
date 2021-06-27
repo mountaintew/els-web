@@ -9,7 +9,8 @@ import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import Dashboard from './components/Dashboard'
 import ForgotPassword from './components/ForgotPassword'
-
+import ResponseTeam from './components/Dashboard/Team'
+import TeamCreateAccount from './components/TeamCreateAccount';
 const theme = createMuiTheme({
 
   palette: {
@@ -34,7 +35,9 @@ function App() {
             <PrivateRoute exact path="/" component={Dashboard} />
             <Route path="/new" component={Create} />
             <Route path="/login" component={Login} />
+            <PrivateRoute path="/team" component={ResponseTeam}/>
             <Route path="/forgot" component={ForgotPassword}/>
+            <Route path="/teamcreate" component={TeamCreateAccount}/>
           </Switch>
         </AuthProvider>
       </Router>

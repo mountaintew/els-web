@@ -27,9 +27,8 @@ import PeopleAltRoundedIcon from '@material-ui/icons/PeopleAltRounded';
 import ReactWeather, { useOpenWeather } from 'react-open-weather';
 import AnnouncementRoundedIcon from '@material-ui/icons/AnnouncementRounded';
 import DirectionsRunRoundedIcon from '@material-ui/icons/DirectionsRunRounded';
+import CropFreeRoundedIcon from '@material-ui/icons/CropFreeRounded';
 import zIndex from '@material-ui/core/styles/zIndex';
-
-
 
 const BootstrapInput = withStyles((theme) => ({
     root: {
@@ -75,7 +74,10 @@ const useStyles = makeStyles((theme) => ({
         flexGrow: 1,
         display: 'flex'
     },
-
+    small: {
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+    },
     content: {
         flexGrow: 1,
         overflow: 'auto',
@@ -218,15 +220,19 @@ function Alert(props) {
 }
 
 function Dashboard() {
-
+    var React = require('react');
+    var QRCode = require('qrcode.react');
     const classes = useStyles();
     const { currentUser, logout } = useAuth()
     const history = useHistory()
     const iOS = process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent); // swipeable on ios devices
     const dbRef = firebase.database();
     const MINUTE_MS = 10000;
+    const [municipality, setMunicipality] = useState('')
     const [adminName, setAdminName] = useState('')
+    const [barangayId, setBarangayId] = useState('')
 
+    
     const [severity, setSeverity] = useState('error')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
@@ -245,6 +251,17 @@ function Dashboard() {
 
     const scrollToReports = () => reportsRef.current.scrollIntoView()
     // run this function from an event handler or an effect to execute scroll 
+
+
+    const [openQR, setOpenQR] = useState(false);
+
+    const handleOpenQR = () => {
+        setOpenQR(true);
+    };
+
+    const handleCloseQR = () => {
+        setOpenQR(false);
+    };
 
 
     // Functions ######################
@@ -286,7 +303,7 @@ function Dashboard() {
             dbRef.ref('/Users').orderByChild('/info/timestamp').once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     Object.values(snapshot.val()).map((v) => {
-                        if (v.info.timestamp !== undefined) {
+                        if (v.info.timestamp !== undefined) {                            
                             if (v.info.state !== "Emergency") {
                                 var difference = new Date().getTime() - v.info.timestamp // (2)
                                 var identifier = difference / 60000 // (3)
@@ -312,14 +329,15 @@ function Dashboard() {
                                             state: "Emergency",
                                             details: "ELS Generated",
                                             toggled: v.info.toggled,
-                                            message: "Resident Location has been inactive for 5 Minutes"
-
+                                            message: "Resident Location has been inactive for 5 Minutes",
+                                            timestamp: ''
                                         }).catch((error) => {
                                             console.log('Connection Lost');
                                         })
                                     }
                                 }
                             }
+                        }else{
                         }
                     })
                 } else {
@@ -336,6 +354,8 @@ function Dashboard() {
             if (snapshot.exists()) {
                 Object.values(snapshot.val()).map((val) => {
                     setLocality(val.barangay)
+                    setBarangayId(val.barangay_id)
+                    setMunicipality(val.municipality)
                 })
             }
         })
@@ -390,7 +410,7 @@ function Dashboard() {
                             <ListItemIcon><PeopleAltRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Administrators" />
                         </ListItem>
-                        <ListItem button key="Response Team">
+                        <ListItem button key="Response Team" onClick={() => { history.push("/team") }}>
                             <ListItemIcon><DirectionsRunRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Response Team" />
                         </ListItem>
@@ -518,6 +538,8 @@ function Dashboard() {
                 }
             })
     }
+
+    
     const fixedHeightMap = clsx(classes.paper, classes.fixedHeightMap);
     const fixedHeightRes = clsx(classes.paper, classes.fixedHeightRes);
 
@@ -528,7 +550,8 @@ function Dashboard() {
         lang: 'en',
         unit: 'metric', // values are (metric, standard, imperial)
     });
-
+    let qrvalue
+    qrvalue = barangayId && ("https://elms-accounts.web.app/teamcreate?barangayid=" + barangayId)
 
     return (
         <div >
@@ -544,7 +567,7 @@ function Dashboard() {
             <div className={classes.root}>
                 <CssBaseline />
 
-                <AppBar position="absolute" style={{backgroundColor: 'rgba(207, 216, 220, 1)'}} elevation={0} >
+                <AppBar position="absolute" style={{ backgroundColor: 'rgba(207, 216, 220, 1)' }} elevation={0} >
                     <Container>
                         <Toolbar>
                             <IconButton
@@ -598,8 +621,20 @@ function Dashboard() {
 
                             </div>
                             <div className={classes.grow} />
+                            {barangayId &&
+                                <IconButton
+                                    edge="end"
+                                    aria-label="account of current user"
+                                    aria-haspopup="true"
+                                    color="inherit"
+                                    onClick={() => setOpenQR(true)}
+                                    aria-controls="account-menu"
+                                    aria-haspopup="true"
+                                >
+                                    <Avatar className={classes.small} variant="rounded"><CropFreeRoundedIcon /></Avatar>
+                                </IconButton>}
 
-                            <Typography>{adminName}</Typography>
+
                             <IconButton
                                 edge="end"
                                 aria-label="account of current user"
@@ -710,7 +745,6 @@ function Dashboard() {
                 fullWidth
                 open={openResultDialog}
                 onClose={closeResultDialog}
-
             >
                 <DialogTitle style={{ backgroundColor: '#eceff1' }}>
                     {searchResult && searchResult.length + ` matching result${searchResult.length > 1 ? 's' : ''}...`}
@@ -780,6 +814,26 @@ function Dashboard() {
             </Dialog>
             {/* Dialog ##################### */}
 
+            {/* QR Dialog ##################### */}
+            <Dialog
+                open={openQR}
+                onClose={handleCloseQR}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogContent style={{ textAlign: 'center' }}>
+                    <Typography variant="h5" style={{ fontWeight: 'bold' }}>Barangay ID</Typography>
+                    <Typography variant="caption" style={{ color: '#616161' }} gutterBottom >{locality + ", " + municipality}</Typography>
+                  
+                    {barangayId && <div style={{marginTop: '30px', marginLeft: '30px', marginRight: '30px'}}><QRCode value={qrvalue} /></div>}
+                    <br />
+                    <Typography variant="h6" style={{ fontWeight: 'bold' }} >{barangayId}</Typography>
+                    <br />
+                    <Typography variant="caption"  gutterBottom >Always keep private.</Typography>
+
+                </DialogContent>
+            </Dialog>
+            {/* QR Dialog ##################### */}
         </div>
     )
 }

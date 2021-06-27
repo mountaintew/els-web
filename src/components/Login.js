@@ -7,7 +7,7 @@ import LocationOnIcon from '@material-ui/icons/LocationOn';
 import { useForm } from 'react-hook-form'
 
 import { useAuth } from '../contexts/AuthContext'
-import { useHistory, Link } from 'react-router-dom'
+import { useHistory, Link, useLocation} from 'react-router-dom'
 
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -60,16 +60,15 @@ const useStyles = makeStyles((theme) => ({
 export default function Login(props) {
     const classes = useStyles();
     const { watch, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
-
     const [severity, setSeverity] = useState('')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
     const [tfDisabled, setTfDisabled] = useState(false)
-
     const { currentUser, login } = useAuth()
     const history = useHistory()
 
     const [submitBtn, setSubmitBtn] = useState(false)
+
 
     if (props.register === 'success') {
         setSnack(true)
@@ -106,9 +105,7 @@ export default function Login(props) {
                     setSeverity("error")
                     break;
                 default:
-
             }
-
         }
     }
 
@@ -124,7 +121,6 @@ export default function Login(props) {
         }
         setSnack(false);
     };
-
 
 
     return (

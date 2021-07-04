@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { fade, makeStyles, withStyles } from '@material-ui/core/styles';
-import { CssBaseline, useMediaQuery, Accordion, AccordionDetails, AccordionSummary, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormHelperText, Grid, IconButton, InputBase, InputLabel, List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem, NativeSelect, Paper, Select, SwipeableDrawer, Toolbar, Typography, Snackbar, Avatar } from '@material-ui/core';
+import { CssBaseline, useMediaQuery, Accordion, AccordionDetails, AccordionSummary, AppBar, TextField, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormHelperText, Grid, IconButton, InputBase, InputLabel, List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem, NativeSelect, Paper, Select, SwipeableDrawer, Toolbar, Typography, Snackbar, Avatar, DialogActions, TableCell, TableContainer, Table, TableHead, TableRow, TableBody } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SearchIcon from '@material-ui/icons/Search';
@@ -15,9 +15,8 @@ import Geocode from "react-geocode";
 import { ExpandMore } from '@material-ui/icons';
 import FiberManualRecordIcon from '@material-ui/icons/FiberManualRecord';
 import MuiAlert from '@material-ui/lab/Alert';
-import { amber, grey } from '@material-ui/core/colors';
 import Reports from './Dashboard/Reports'
-
+import MapRoundedIcon from '@material-ui/icons/MapRounded';
 import LockIcon from '@material-ui/icons/Lock';
 import EditIcon from '@material-ui/icons/Edit';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
@@ -25,10 +24,9 @@ import ArchiveRoundedIcon from '@material-ui/icons/ArchiveRounded';
 import AssignmentRoundedIcon from '@material-ui/icons/AssignmentRounded';
 import PeopleAltRoundedIcon from '@material-ui/icons/PeopleAltRounded';
 import ReactWeather, { useOpenWeather } from 'react-open-weather';
-import AnnouncementRoundedIcon from '@material-ui/icons/AnnouncementRounded';
 import DirectionsRunRoundedIcon from '@material-ui/icons/DirectionsRunRounded';
 import CropFreeRoundedIcon from '@material-ui/icons/CropFreeRounded';
-import zIndex from '@material-ui/core/styles/zIndex';
+import { useForm } from 'react-hook-form'
 
 const BootstrapInput = withStyles((theme) => ({
     root: {
@@ -156,6 +154,7 @@ const useStyles = makeStyles((theme) => ({
     },
     fixedHeightMap: {
         height: 500,
+        maxHeight: 500
     },
     formControl: {
         minWidth: 80,
@@ -222,6 +221,7 @@ function Alert(props) {
 function Dashboard() {
     var React = require('react');
     var QRCode = require('qrcode.react');
+    const { watch, register, unregister, formState: { errors, isValid }, } = useForm({ mode: "all" });
     const classes = useStyles();
     const { currentUser, logout } = useAuth()
     const history = useHistory()
@@ -231,11 +231,13 @@ function Dashboard() {
     const [municipality, setMunicipality] = useState('')
     const [adminName, setAdminName] = useState('')
     const [barangayId, setBarangayId] = useState('')
-
-    
+    const [isLiveMap, setIsLiveMap] = useState(true)
+    const [isArchive, setIsArchive] = useState(false)
+    const [openPassword, setOpenPassword] = useState(false)
     const [severity, setSeverity] = useState('error')
     const [snackMessage, setSnackMessage] = useState('')
     const [snack, setSnack] = useState(false)
+    const [archive, setArchive] = useState()
     const handleSnackClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -262,6 +264,11 @@ function Dashboard() {
     const handleCloseQR = () => {
         setOpenQR(false);
     };
+
+    const closePassword = () => {
+        setOpenPassword(false);
+    };
+
 
 
     // Functions ######################
@@ -303,7 +310,7 @@ function Dashboard() {
             dbRef.ref('/Users').orderByChild('/info/timestamp').once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     Object.values(snapshot.val()).map((v) => {
-                        if (v.info.timestamp !== undefined) {                            
+                        if (v.info.timestamp !== undefined) {
                             if (v.info.state !== "Emergency") {
                                 var difference = new Date().getTime() - v.info.timestamp // (2)
                                 var identifier = difference / 60000 // (3)
@@ -337,7 +344,7 @@ function Dashboard() {
                                     }
                                 }
                             }
-                        }else{
+                        } else {
                         }
                     })
                 } else {
@@ -379,6 +386,59 @@ function Dashboard() {
         right: false,
     });
 
+
+    const handleSubmitPassword = (e) => {
+        e.preventDefault()
+        let pass
+
+        dbRef.ref('/administrators').orderByChild('email').equalTo(currentUser.email).once('value').then((ss) => {
+            if (ss.exists()) {
+                Object.values(ss.val()).map((v) => {
+                    if (v.password === watch('password')) {
+                        pass = v.password
+                        setOpenPassword(false)
+                        setIsArchive(true)
+                        setIsLiveMap(false)
+                        unregister("password", { keepDefaultValue: false })
+                        dbRef.ref('/Archive/' + barangayId).on('value', (snapshot) => {
+                            if (snapshot.exists()) {
+                                let arch = []
+                                Object.values(snapshot.val()).map((v) => {
+                                    arch.push(v)
+                                })
+                                setArchive(arch)
+                                console.log(JSON.stringify(arch, null, 2))
+                            }
+                        })
+                    } else {
+                        setSnack(false)
+                        setSnack(true)
+                        setSeverity('error')
+                        setSnackMessage('Invalid Password.')
+                        unregister("password", { keepDefaultValue: false })
+                    }
+                })
+            }
+        })
+
+
+
+    }
+
+    const openArchive = () => {
+        // setIsLiveMap(false)
+        setOpenPassword(true)
+        // setIsArchive(true)
+    }
+
+    const closeArchive = () => {
+        setIsLiveMap(true)
+        setIsArchive(false)
+    }
+
+
+
+
     const toggleDrawer = (anchor, open) => (event) => {
         if (event && event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
             return;
@@ -406,26 +466,33 @@ function Dashboard() {
                             <ListItemText primary="Reports" />
                         </ListItem>
 
-                        <ListItem button key="Administrator">
+                        {/* <ListItem button key="Administrator">
                             <ListItemIcon><PeopleAltRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Administrators" />
                         </ListItem>
                         <ListItem button key="Response Team" onClick={() => { history.push("/team") }}>
                             <ListItemIcon><DirectionsRunRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Response Team" />
-                        </ListItem>
-                        <ListItem button key="Announcements">
-                            <ListItemIcon><AnnouncementRoundedIcon /></ListItemIcon>
-                            <ListItemText primary="Announcements" />
-                        </ListItem>
+                        </ListItem> */}
                     </List>
+
+
+
                     <List className={classes.bottomPush}>
-                        {/* {['Reports', 'Archive', 'Administrators'].map((text, index) => ( */}
-                        <ListItem button key="Archive">
-                            <ListItemIcon><ArchiveRoundedIcon /></ListItemIcon>
-                            <ListItemText primary="Archive" />
-                        </ListItem>
+
+                        {!isLiveMap ?
+                            <ListItem button key="Live Map" onClick={() => closeArchive()}>
+                                <ListItemIcon><MapRoundedIcon /></ListItemIcon>
+                                <ListItemText primary="View Live Map" />
+                            </ListItem>
+                            :
+                            <ListItem button key="Archive" onClick={() => openArchive()}>
+                                <ListItemIcon><ArchiveRoundedIcon /></ListItemIcon>
+                                <ListItemText primary="Management of Files" />
+                            </ListItem>
+                        }
                     </List>
+
                 </div>
 
 
@@ -539,7 +606,7 @@ function Dashboard() {
             })
     }
 
-    
+
     const fixedHeightMap = clsx(classes.paper, classes.fixedHeightMap);
     const fixedHeightRes = clsx(classes.paper, classes.fixedHeightRes);
 
@@ -696,7 +763,54 @@ function Dashboard() {
                         <Grid container spacing={2} >
                             <Grid item xs={12} md={8} lg={9}>
                                 <Paper className={fixedHeightMap} elevation={1} style={{ backgroundColor: 'rgba(0,0,0,0)', borderRadius: '20px' }}>
-                                    <LiveMap center={center} />
+                                    {isLiveMap ? <LiveMap center={center} /> : ''}
+                                    {isArchive ?
+                                        <div>
+                                            <TableContainer component={Paper} className={fixedHeightMap} style={{ borderRadius: '20px', overflow: 'auto'}}>
+                                                <Table className={classes.table} aria-label="simple table">
+                                                    <TableHead>
+                                                        <TableRow>
+                                                            <TableCell>Barangay ID</TableCell>
+                                                            <TableCell align="left">Fullname</TableCell>
+                                                            <TableCell align="left">Mobile Number</TableCell>
+                                                            <TableCell align="left">Message</TableCell>
+                                                            <TableCell>Locality</TableCell>
+                                                            <TableCell>Location</TableCell>
+                                                            <TableCell align="left">Triage</TableCell>
+                                                            <TableCell align="left">Reported By</TableCell>
+                                                            <TableCell align="left">Reported On</TableCell>
+                                                            <TableCell align="left">Report Department</TableCell>
+                                                            <TableCell align="left">Timestamp</TableCell>
+                                                            <TableCell align="left">State</TableCell>
+                                                        </TableRow>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {archive && archive.map((row) => (
+                                                            <TableRow key={row.mobile}>
+                                                                <TableCell component="th" scope="row">
+                                                                    {row.barangay_id}
+                                                                </TableCell>
+                                                                <TableCell align="left">{row.fullname}</TableCell>
+                                                                <TableCell align="left">{row.mobile}</TableCell>
+                                                                <TableCell align="left">{row.message}</TableCell>
+                                                                <TableCell align="left">{row.locality}</TableCell>
+                                                                <TableCell align="left">{row.lat + ", " + row.lng}</TableCell>
+                                                                <TableCell align="left">{row.triage}</TableCell>
+                                                                <TableCell align="left">{row.reportedBy}</TableCell>
+                                                                <TableCell align="left">{new Date(row.reportedOn).toLocaleString()}</TableCell>
+                                                                <TableCell align="left">{row.dept}</TableCell>
+                                                                <TableCell align="left">{new Date(row.timestamp).toLocaleString()}</TableCell>
+                                                                <TableCell align="left">{row.state}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                        </div>
+
+
+
+                                        : ''}
                                 </Paper>
                             </Grid>
                             <Grid item xs={12} md={4} lg={3} >
@@ -824,16 +938,49 @@ function Dashboard() {
                 <DialogContent style={{ textAlign: 'center' }}>
                     <Typography variant="h5" style={{ fontWeight: 'bold' }}>Barangay ID</Typography>
                     <Typography variant="caption" style={{ color: '#616161' }} gutterBottom >{locality + ", " + municipality}</Typography>
-                  
-                    {barangayId && <div style={{marginTop: '30px', marginLeft: '30px', marginRight: '30px'}}><QRCode value={qrvalue} /></div>}
+
+                    {barangayId && <div style={{ marginTop: '30px', marginLeft: '30px', marginRight: '30px' }}><QRCode value={qrvalue} /></div>}
                     <br />
                     <Typography variant="h6" style={{ fontWeight: 'bold' }} >{barangayId}</Typography>
                     <br />
-                    <Typography variant="caption"  gutterBottom >Always keep private.</Typography>
+                    <Typography variant="caption" gutterBottom >Always keep private.</Typography>
 
                 </DialogContent>
             </Dialog>
             {/* QR Dialog ##################### */}
+
+            <Dialog
+                open={openPassword}
+                onClose={closePassword}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <form noValidate autoComplete="off"  >
+                    <DialogTitle id="form-dialog-title">Input your password</DialogTitle>
+                    <DialogContent>
+
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            name="password"
+                            id="password"
+                            required
+                            variant="outlined"
+                            label="Password"
+                            fullWidth
+                            type="password"
+                            value={watch('password') ? watch('password') : ''}
+                            error={errors.password ? true : false}
+                            {...register('password', { required: true })}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button fullWidth color="primary" variant="contained" disabled={!isValid} onClick={(e) => handleSubmitPassword(e)}>
+                            Submit
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
         </div>
     )
 }

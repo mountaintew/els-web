@@ -377,6 +377,8 @@ function LiveMap(props) {
     const onSubmit = (data) => {
 
 
+
+
         dbRef.ref('/Markers').orderByChild('mobile').equalTo(selectedMarker.id).once('value').then((snap) => {
             if (snap.exists()) {
                 let db_fname, db_mobile, db_togg, db_details, db_message, db_lat, db_lng, db_locl, db_ts, timenow
@@ -393,8 +395,6 @@ function LiveMap(props) {
                     db_ts = v.timestamp
                 })
                 timenow = Date.now()
-                
-                
                 try {
                     dbRef.ref('/Markers/' + selectedMarker.id).set({
                         "fullname": db_fname,
@@ -410,7 +410,7 @@ function LiveMap(props) {
                         "dept": watch('dept'),
                         "reportedOn": timenow,
                         "timestamp": db_ts,
-                        "triage" : watch('triage')
+                        "triage": watch('triage')
                     }, (err) => {
                         if (err) {
                             setSnack(true)
@@ -443,10 +443,29 @@ function LiveMap(props) {
                                                     setSeverity('error')
                                                 } else {
                                                     // Data saved successfully
-                                                    handleRespondClose()
-                                                    setSnack(true)
-                                                    setSnackMessage('Report Successful')
-                                                    setSeverity('success')
+                                                    dbRef.ref('/Archive/' + barangayId).push({
+                                                        "fullname": db_fname,
+                                                        "details": db_details,
+                                                        "lat": db_lat,
+                                                        "lng": db_lng,
+                                                        "locality": db_locl,
+                                                        "message": db_message,
+                                                        "mobile": db_mobile,
+                                                        "toggled": db_togg,
+                                                        "state": "Reported",
+                                                        "barangay_id": barangayId,
+                                                        "dept": watch('dept'),
+                                                        "reportedOn": timenow,
+                                                        "timestamp": db_ts,
+                                                        "triage": watch('triage')
+                                                    }, err => {
+                                                        if (!err) {
+                                                            handleRespondClose()
+                                                            setSnack(true)
+                                                            setSnackMessage('Report Successful')
+                                                            setSeverity('success')
+                                                        }
+                                                    })
                                                 }
                                             })
                                         }
@@ -454,22 +473,19 @@ function LiveMap(props) {
                                 }
                             })
                         }
-                    })    
+                    })
                 } catch (error) {
                     setSnack(true)
                     setSeverity('warning')
                     setSnackMessage('Report cannot processed right now.')
-                }                
+                }
             }
         })
     }
-
-
-
     return (
         <div style={{
             display: 'inline - block',
-            borderRadius: '20px',
+            borderRadius: '20px',   
             overflow: 'hidden'
         }}>
             <GoogleMap
@@ -503,7 +519,6 @@ function LiveMap(props) {
                                 lng: parseFloat(marker.lng)
                             }}
                             title={marker.id}
-                            onUnmount={alarmoff}
                             onLoad={alarm}
                             onClick={() => {
                                 setSelectedMarker(marker)
@@ -603,8 +618,6 @@ function LiveMap(props) {
                     )
                 }
             </GoogleMap>
-            {/* stop sound after removed  */}
-            {/* {getMs} */}
 
 
             {response &&
@@ -699,8 +712,8 @@ function LiveMap(props) {
                                         <MenuItem value="">
                                             <em>Set Triage</em>
                                         </MenuItem>
-                                        <MenuItem value="nurg" style={{ color: '#4CAF50' }}>
-                                            Non-Urgent
+                                        <MenuItem value="nurg" style={{ color: '#212121' }}>
+                                            Urgent
                                         </MenuItem>
                                         <MenuItem value="prio" style={{ color: '#FFC107' }}>
                                             Priority

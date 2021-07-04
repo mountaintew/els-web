@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "elms-accounts"
+  },
+  "targets": {
+    "elms-accounts": {
+      "hosting": {
+        "app": [
+          "els-adm"
+        ]
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Card, CardContent, CircularProgress, Container, CssBaseline, FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, Snackbar, Step, StepLabel, Stepper, TextField, Typography } from '@material-ui/core'
 import React, { useState } from 'react'
-import locations from '../locations.json'
+import locations from '../locationlittle.json'
 import { makeStyles } from '@material-ui/core/styles';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
 import { amber } from '@material-ui/core/colors';
@@ -267,10 +267,17 @@ function CreateAccount() {
                     if (error) {
                         alert('Error saving.')
                     } else {
-                        dbRef.ref('/Barangays/' + watch('barangay') + "/barangay_id").set(rString, (error) => {
-                            if (error) {
-                                alert('Error saving.')
-                            } else {
+                        dbRef.ref('/Barangays/' + watch('barangay') + "/barangay_id").once('value').then((ss) => {
+                            if (!ss.exists()){
+                                dbRef.ref('/Barangays/' + watch('barangay') + "/barangay_id").set(rString, (error) => {
+                                    if (error) {
+                                        alert('Error saving.')
+                                    } else {
+                                        signup(watch('email'), watch('password'))
+                                        history.push("/login")
+                                    }
+                                })
+                            }else{
                                 signup(watch('email'), watch('password'))
                                 history.push("/login")
                             }

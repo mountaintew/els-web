@@ -232,14 +232,6 @@ function Team() {
                             <ListItemIcon><DashboardRoundedIcon /></ListItemIcon>
                             <ListItemText primary="Dashboard" />
                         </ListItem>
-                        <ListItem button key="Departments">
-                            <ListItemIcon><SupervisedUserCircleRoundedIcon /></ListItemIcon>
-                            <ListItemText primary="Departments" />
-                        </ListItem>
-                        <ListItem button key="Announcements">
-                            <ListItemIcon><AnnouncementRoundedIcon /></ListItemIcon>
-                            <ListItemText primary="Announcements" />
-                        </ListItem>
                     </List>
                 </div>
 

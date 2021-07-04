@@ -1,0 +1,65 @@
+{
+    "NCR": {
+      "region_name": "NCR",
+      "province_list": {
+        "NATIONAL CAPITAL REGION - SECOND DISTRICT": {
+          "municipality_list": {
+            "CITY OF MARIKINA": {
+              "barangay_list": [
+                "BARANGKA",
+                "CALUMPANG",
+                "CONCEPCION DOS",
+                "CONCEPCION UNO",
+                "FORTUNE",
+                "INDUSTRIAL VALLEY",
+                "JESUS DE LA PE\u00d1A",
+                "MALANDAY",
+                "MARIKINA HEIGHTS (CONCEPCION)",
+                "NANGKA",
+                "PARANG",
+                "SAN ROQUE",
+                "SANTA ELENA (POB.)",
+                "SANTO NI\u00d1O",
+                "TA\u00d1ONG",
+                "TUMANA"
+              ]
+            },
+            "CITY OF PASIG": {
+              "barangay_list": [
+                "BAGONG ILOG",
+                "BAGONG KATIPUNAN",
+                "BAMBANG",
+                "BUTING",
+                "CANIOGAN",
+                "DELA PAZ",
+                "KALAWAAN",
+                "KAPASIGAN",
+                "KAPITOLYO",
+                "MALINAO",
+                "MANGGAHAN",
+                "MAYBUNGA",
+                "ORANBO",
+                "PALATIW",
+                "PINAGBUHATAN",
+                "PINEDA",
+                "ROSARIO",
+                "SAGAD",
+                "SAN ANTONIO",
+                "SAN JOAQUIN",
+                "SAN JOSE",
+                "SAN MIGUEL",
+                "SAN NICOLAS (POB.)",
+                "SANTA CRUZ",
+                "SANTA LUCIA",
+                "SANTA ROSA",
+                "SANTO TOMAS",
+                "SANTOLAN",
+                "SUMILANG",
+                "UGONG"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }

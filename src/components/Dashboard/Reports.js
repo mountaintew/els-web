@@ -11,6 +11,7 @@ import firebase from '../../util/firebase';
 import { Divider, Avatar, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Slide, Typography, Link } from '@material-ui/core';
 import Geocode from "react-geocode";
 import { useAuth } from '../../contexts/AuthContext'
+import Maps from './Map'
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -48,6 +49,9 @@ export default function Reports() {
   const [info, setInfo] = useState(null)
   const [imageUrl, setImageUrl] = useState(null)
   const [emergencyInfo, setEmergencyInfo] = useState(null)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [residentLoc, setResidentLoc] = useState()
+
   const handleClose = () => {
     setOpen(false);
     setAddress(null)
@@ -160,11 +164,18 @@ export default function Reports() {
 
   }
 
+  function viewLocation(lat, lng) {
+    setMapOpen(true)
+    setResidentLoc({ "lat": parseFloat(lat), "lng": parseFloat(lng) })
+  }
+
+  const closeMap = () => {
+    setMapOpen(false)
+  }
   return (
     <div>
       <TableContainer component={Paper}>
         <Table className={classes.table} aria-label="simple table">
-
           <TableHead>
             <TableRow>
               <TableCell>Details</TableCell>
@@ -172,7 +183,6 @@ export default function Reports() {
               <TableCell align="center">Emergency</TableCell>
               <TableCell align="center">Status</TableCell>
               <TableCell align="center">Reported On</TableCell>
-
             </TableRow>
           </TableHead>
           <TableBody className={classes.list}>
@@ -241,9 +251,7 @@ export default function Reports() {
                     <Link
                       component="button"
                       variant="body2"
-                      onClick={() => {
-                        console.info("I'm a button.");
-                      }}
+                      onClick={() => viewLocation(val.lat, val.lng)}
                     >
                       View Location
                     </Link>
@@ -304,8 +312,6 @@ export default function Reports() {
                     </Grid>
                   }
 
-
-
                   {emergencyInfo && emergencyInfo.message === "" ? '' :
                     <Grid item xs={12} style={{ textAlign: 'center' }}>
                       <Typography variant="caption" style={{ color: '#546E7A' }}>Resident message:</Typography>
@@ -319,20 +325,25 @@ export default function Reports() {
                 <Typography variant="subtitle2" style={{ color: '#222' }}>{emergencyInfo && emergencyInfo.reportedBy}</Typography>
               </div>
             )}
-            {/* <pre>
-
-              {JSON.stringify(info, null, 2)}
-            </pre> */}
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="textSecondary" fullWidth>
-            Dismiss
-          </Button>
-          <Button onClick={handleClose} color="primary" fullWidth>
-            Responded
-          </Button>
-        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={mapOpen}
+        onClose={() => closeMap()}
+        fullWidth={true}
+        style={{
+          margin: '10px'
+        }}
+        >
+
+        <DialogContent
+          style={{
+            padding: '0'
+          }}>
+          {residentLoc && <Maps location={residentLoc} />}
+
+        </DialogContent>
       </Dialog>
     </div>
 
